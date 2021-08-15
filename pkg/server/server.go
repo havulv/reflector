@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -48,24 +45,13 @@ func (s *server) Run(ctx context.Context) error {
 	defer cancel()
 
 	wg := sync.WaitGroup{}
-	killSignals := []os.Signal{
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGKILL,
-	}
-	quitChan := make(chan os.Signal, len(killSignals))
-	signal.Notify(
-		quitChan,
-		killSignals...,
-	)
-
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		serve(s, s.logger, cancel)
 	}()
 	return shutdown(
-		serverCtx, s, s.logger, quitChan, &wg)
+		serverCtx, s, s.logger, &wg)
 }
 
 func serve(s *server, logger zerolog.Logger, cancel func()) {
@@ -88,19 +74,15 @@ func shutdown(
 	ctx context.Context,
 	s *server,
 	logger zerolog.Logger,
-	quitChan chan os.Signal,
 	wg *sync.WaitGroup,
 ) error {
 	select {
 	case <-ctx.Done():
 		logger.Error().Err(ctx.Err()).Msg("Context finished, shutting down")
-	case sig := <-quitChan:
-		logger.Info().
-			Str("signal", sig.String()).
-			Msg("Received termination signal. Beginning graceful shutdown")
 	}
 	err := s.Shutdown(ctx)
 	wg.Wait()
+
 	// we closed the server or the original context was canceled so we don't care
 	if errors.Is(err, http.ErrServerClosed) || errors.Is(err, context.Canceled) {
 		return nil
