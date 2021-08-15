@@ -18,6 +18,8 @@ vendor/
 
 # Ignore binaries
 /reflector
+# Gets in there sometimes...
+/cmd/cmd
 
 # Self signed certs
 *.crt
