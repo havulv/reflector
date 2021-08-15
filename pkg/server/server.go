@@ -29,6 +29,16 @@ type server struct {
 func NewMetricsServer(logger zerolog.Logger, address string) MetricsServer {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
+
+	// TODO: implement truthy healthz and ready endpoints
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		return
+	})
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		return
+	})
 	s := &server{
 		logger: logger,
 	}

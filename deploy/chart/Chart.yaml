@@ -1,0 +1,16 @@
+apiVersion: v1
+name: reflector
+version: 0.1.0
+appVersion: 0.1.0
+description: |
+  A utility deployment for syncing secrets across namespaces (e.g. cert-manager generated wildcard certificates).
+keywords:
+- secrets
+- syncing
+- reflect
+- reflector
+sources:
+- https://github.com/havulv/reflector
+maintainers:
+- name: John Andersen
+  email: johnandersen185@gmail.com

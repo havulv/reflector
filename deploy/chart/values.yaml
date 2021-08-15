@@ -1,0 +1,105 @@
+
+# You can choose to have a multi replica deployment
+# but, at this point, there is no horizontal sharding
+# implemented, so there all pods will do the same work.
+# Any multi replica deployments will just be for High
+# Availability.
+replicas: 1
+
+strategy:
+  type: RollingUpdate
+
+image:
+  registry: quay.io
+  repository: havulv/reflector
+
+  # Override the image tag to deploy by setting this variable.
+  # If no value is set, the chart's appVersion will be used.
+  # tag: canary
+
+  # Setting a digest will override any tag
+  # digest: sha256:0e072dddd1f7f8fc8909a2ca6f65e76c5f0d2fcfb8be47935ae3457e8bbceb20
+  pullPolicy: IfNotPresent
+
+##################
+# REFLECTOR ARGS #
+##################
+#
+# Enable verbose logging (debug logging)
+verbose: false
+
+# WARNING WARNING WARNING
+# This will delete reflected secrets when the original is deleted
+# This can be very dangerous, and there is likely no way back from it!
+# WARNING WARNING WARNING
+cascadeDelete: false
+
+# Optional extra arguments
+extraArgs: []
+
+# Optional extra environment variables
+extraEnv: []
+
+# Resources that this deployment will take
+resources:
+  cpu: 10m
+  memory: 32Mi
+
+# Node selector for placing pods onto nodes selectively
+nodeSeelector: {}
+
+# Affinity and tolerations for custom scheduling
+affinity: {}
+tolerations: {}
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  # name: ""
+
+  # Optional annotations to add to the reflector's ServiceAccount
+  # annotations: {}
+
+  # Automount API credentials for a Service Account.
+  automountServiceAccountToken: true
+
+rbac:
+  enabled: true
+
+liveness:
+  initialDelaySeconds: 7
+  periodSeconds: 3
+
+readiness:
+  initialDelaySeconds: 13
+  periodSeconds: 3
+
+
+# Optional annotations to add to the Deployment
+# deploymentAnnotations: {}
+
+# Optional annotations to add to the reflector Pods
+# podAnnotations: {}
+
+# Optional labels to add to the reflector Pods
+podLabels: {}
+
+# Optional labels to add to the reflector Service
+# serviceLabels: {}
+
+metrics:
+  enabled: true
+  # You can set a custom host:port address with these
+  # host:
+  # port:
+  servicemonitor:
+    enabled: false
+    prometheusName: default
+    targetPort: 8080
+    path: /metrics
+    interval: 60s
+    scrapeTimeout: 20s
+    labels: {}

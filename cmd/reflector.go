@@ -74,6 +74,10 @@ to others.  `, " "),
 			}
 			logger = setLogLevel(logger, *verbose)
 
+			if *namespace == "" {
+				*namespace = os.Getenv("POD_NAMESPACE")
+			}
+
 			// Ensure that, if either component goes through
 			// a catastrophic error, then the context will
 			// be cancelled and all components will begin shutdown
@@ -126,19 +130,37 @@ to others.  `, " "),
 	}
 
 	namespace = cmd.Flags().StringP(
-		"namespace", "n", "kube-system", "The namespace to sync secrets from")
+		"namespace", "n", "",
+		`The namespace to sync secrets from`)
 	retries = cmd.Flags().IntP(
-		"retries", "r", 5, "The number of times to retry reflecting a secret on error")
+		"retries", "r", 5,
+		`The number of times to retry reflecting a
+secret on error`)
 	metrics = cmd.Flags().BoolP(
-		"metrics", "m", true, "Enables Prometheus metrics for the reflector")
+		"metrics", "m", true,
+		`Enables Prometheus metrics for the reflector`)
 	metricsAddr = cmd.Flags().String(
-		"metrics-addr", "localhost:8080", "The address to expose metrics on")
+		"metrics-addr", "localhost:8080",
+		`The address to expose metrics on`)
 	workerCon = cmd.Flags().Int(
-		"worker-concurrency", 10, "The number of workers who can pick work of the work queue concurrently")
+		"worker-concurrency", 10,
+		`The number of workers who can pick work of
+the work queue concurrently`)
 	reflectCon = cmd.Flags().Int(
-		"reflect-concurrency", 1, "The number of reflections that can happen concurrently to different namespaces.")
+		"reflect-concurrency", 1,
+		`The number of reflections that can happen
+concurrently to different namespaces.`)
 	cascadeDelete = cmd.Flags().Bool(
-		"cascade-delete", false, "If enabled, secrets that were reflected into other namespaces will be deleted when the original secret is deleted.\n***WARNING*** This can be very dangerous to set, and is not recommended unless you are _absolutely certain_ it fits your use case ***WARNING***")
+		"cascade-delete", false,
+		`If enabled, secrets that were reflected into
+other namespaces will be deleted when the
+original secret is deleted.
+
+***WARNING***
+This can be very dangerous to set, and is
+not recommended unless you are
+_absolutely certain_ it fits your use case
+***WARNING***`)
 	cmdVersion = cmd.Flags().Bool(
 		"version", false, "Output version information")
 	verbose = cmd.Flags().BoolP("verbose", "v", false, "Enable verbose logging")

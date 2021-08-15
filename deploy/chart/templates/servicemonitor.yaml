@@ -1,0 +1,36 @@
+{{- if and .Values.metrics.enabled .Values.metrics.servicemonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "reflector.fullname" . }}
+{{- if .Values.metrics.servicemonitor.namespace }}
+  namespace: {{ .Values.metrics.servicemonitor.namespace }}
+{{- else }}
+  namespace: {{ .Release.Namespace | quote }}
+{{- end }}
+  labels:
+    app: {{ include "reflector.name" . }}
+    app.kubernetes.io/name: {{ include "reflector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+    {{- include "labels" . | nindent 4 }}
+    prometheus: {{ .Values.metrics.servicemonitor.prometheusName }}
+{{- if .Values.metrics.servicemonitor.labels }}
+{{ toYaml .Values.metrics.servicemonitor.labels | indent 4}}
+{{- end }}
+spec:
+  jobLabel: {{ template "reflector.fullname" . }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "reflector.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "reflector"
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+  - targetPort: {{ .Values.metrics.servicemonitor.targetPort }}
+    path: {{ .Values.metrics.servicemonitor.path }}
+    interval: {{ .Values.metrics.servicemonitor.interval }}
+    scrapeTimeout: {{ .Values.metrics.servicemonitor.scrapeTimeout }}
+{{- end }}
