@@ -32,6 +32,8 @@ type reflector struct {
 	logger             zerolog.Logger
 	workerConcurrency  int
 	reflectConcurrency int
+	retries            int
+	cascadeDelete      bool
 	queue              workqueue.RateLimitingInterface
 	indexer            cache.Indexer
 	controller         cache.Controller
@@ -42,6 +44,8 @@ func NewReflector(
 	logger zerolog.Logger,
 	reflectConcurrency int,
 	workerConcurrency int,
+	retries int,
+	cascadeDelete bool,
 	namespace string,
 ) (Reflector, error) {
 	// creates the in-cluster config
@@ -60,8 +64,10 @@ func NewReflector(
 
 	return &reflector{
 		core:               clientset.CoreV1(),
+		cascadeDelete:      cascadeDelete,
 		logger:             logger,
 		queue:              queue,
+		retries:            retries,
 		indexer:            indexer,
 		controller:         controller,
 		reflectConcurrency: reflectConcurrency,
@@ -100,9 +106,12 @@ func (r *reflector) process(key string) error {
 		return err
 	}
 	sec := obj.(*v1.Secret)
+	ctxLogger := r.logger.With().
+		Str("rootNamespace", sec.Namespace).
+		Str("secret", sec.Name).Logger()
 
 	// TODO cascade delete
-	if !exists {
+	if !exists && !r.cascadeDelete {
 		return nil
 	}
 
@@ -112,13 +121,33 @@ func (r *reflector) process(key string) error {
 		return nil
 	}
 
-	namespaces, err := parseNamespaces(ctx, r.core, objAnnotations)
+	namespaces, err := annotations.ParseOrFetchNamespaces(
+		ctx, r.core, objAnnotations)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse namespaces")
 	}
+
+	if !exists && r.cascadeDelete {
+		if r.reflectConcurrency <= 1 {
+			return cascadeDeletion(
+				ctx,
+				ctxLogger,
+				r.core,
+				sec.Name,
+				namespaces)
+		}
+		return cascadeDeleteConcurrent(
+			ctx,
+			ctxLogger,
+			r.core,
+			sec.Name,
+			namespaces,
+			r.reflectConcurrency)
+	}
+
 	return reflectToNamespaces(
 		ctx,
-		r.logger,
+		ctxLogger,
 		r.core,
 		sec,
 		namespaces,
@@ -135,8 +164,12 @@ func (r *reflector) handleErr(err error, key interface{}) {
 		return
 	}
 
-	// This controller retries 5 times if something goes wrong. After that, it stops trying.
-	if r.queue.NumRequeues(key) < 5 {
+	// This controller retries r.retries times if something goes wrong. After that, it stops trying.
+	if r.queue.NumRequeues(key) < r.retries {
+		r.logger.Error().
+			Str("secret", key.(string)).
+			Err(err).
+			Msg("reflection failed; requeueing")
 
 		// Re-enqueue the key rate limited. Based on the rate limiter on the
 		// queue and the re-enqueue history, the key will be processed later again.
@@ -148,7 +181,7 @@ func (r *reflector) handleErr(err error, key interface{}) {
 	// Report to an external entity that, even after several retries, we could not successfully process this key
 	runtime.HandleError(err)
 	r.logger.Error().
-		Str("key", key.(string)).
+		Str("secret", key.(string)).
 		Err(err).
 		Msg("Dropping secret out of the queue")
 }

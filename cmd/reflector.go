@@ -15,18 +15,25 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 
+	"github.com/havulv/reflector/cmd/version"
 	"github.com/havulv/reflector/pkg/reflect"
 	"github.com/havulv/reflector/pkg/server"
 )
 
-var (
-	commitHash string
-	commitDate string
-	semVer     string
-)
-
 func missed(dropped int) {
 	fmt.Printf("Logger Dropped %d messages", dropped)
+}
+
+func setLogLevel(logger zerolog.Logger, verbose bool) zerolog.Logger {
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	if verbose {
+		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	}
+
+	logger.Debug().
+		Int8("verbosity", int8(zerolog.GlobalLevel())).
+		Msg("Created logger")
+	return logger
 }
 
 func reflector() *cobra.Command {
@@ -44,13 +51,14 @@ func reflector() *cobra.Command {
 	// ovewrite the global logger to our new fancy one
 	log.Logger = logger
 
-	// versioning is attached to the root command
-	// so checking it is as simple as reflector --version
-	var version *bool
+	var cmdVersion *bool
+	var metrics *bool
 	var namespace *string
 	var metricsAddr *string
 	var workerCon *int
 	var reflectCon *int
+	var retries *int
+	var cascadeDelete *bool
 
 	cmd := &cobra.Command{
 		Use:   "reflector",
@@ -58,26 +66,13 @@ func reflector() *cobra.Command {
 		Long: strings.Trim(`
 A utility kubernetes server for syncing secrets from one namespace
 to others.  `, " "),
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			if *version {
-				if semVer == "" && commitHash == "" && commitDate == "" {
-					return errors.New(
-						"version information not linked at comile time")
-				}
-				fmt.Printf(
-					"Version: %s\nCommit: %s \nDate: %s\n",
-					semVer, commitHash, commitDate)
-				return nil
+			if *cmdVersion {
+				return version.DumpVersion()
 			}
-			zerolog.SetGlobalLevel(zerolog.WarnLevel)
-			if *verbose {
-				zerolog.SetGlobalLevel(zerolog.DebugLevel)
-			}
-
-			logger.Debug().
-				Int8("verbosity", int8(zerolog.GlobalLevel())).
-				Msg("Created logger")
+			logger = setLogLevel(logger, *verbose)
 
 			// Ensure that, if either component goes through
 			// a catastrophic error, then the context will
@@ -87,24 +82,30 @@ to others.  `, " "),
 			defer death()
 
 			cancellableCtx, cancel := context.WithCancel(signalCtx)
+			// call cancel even though we know this will be a duplicate call
+			defer cancel()
 			wg := sync.WaitGroup{}
 
-			metrics := server.NewMetricsServer(
-				logger.With().Str("component", "metrics").Logger(),
-				*metricsAddr)
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				defer cancel()
-				if err := metrics.Run(cancellableCtx); err != nil {
-					logger.Error().Err(err).Msg("Error while running metrics server")
-				}
-			}()
+			if *metrics {
+				metrics := server.NewMetricsServer(
+					logger.With().Str("component", "metrics").Logger(),
+					*metricsAddr)
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					defer cancel()
+					if err := metrics.Run(cancellableCtx); err != nil {
+						logger.Error().Err(err).Msg("Error while running metrics server")
+					}
+				}()
+			}
 
 			reflector, err := reflect.NewReflector(
 				logger.With().Str("component", "reflector").Logger(),
 				*reflectCon,
 				*workerCon,
+				*retries,
+				*cascadeDelete,
 				*namespace)
 			if err != nil {
 				return errors.Wrap(err, "unable to start reflector")
@@ -119,20 +120,34 @@ to others.  `, " "),
 				}
 			}()
 			wg.Wait()
+
 			return nil
 		},
 	}
 
 	namespace = cmd.Flags().StringP(
 		"namespace", "n", "kube-system", "The namespace to sync secrets from")
+	retries = cmd.Flags().IntP(
+		"retries", "r", 5, "The number of times to retry reflecting a secret on error")
+	metrics = cmd.Flags().BoolP(
+		"metrics", "m", true, "Enables Prometheus metrics for the reflector")
 	metricsAddr = cmd.Flags().String(
 		"metrics-addr", "localhost:8080", "The address to expose metrics on")
 	workerCon = cmd.Flags().Int(
 		"worker-concurrency", 10, "The number of workers who can pick work of the work queue concurrently")
 	reflectCon = cmd.Flags().Int(
 		"reflect-concurrency", 1, "The number of reflections that can happen concurrently to different namespaces.")
-	version = cmd.Flags().Bool(
+	cascadeDelete = cmd.Flags().Bool(
+		"cascade-delete", false, "If enabled, secrets that were reflected into other namespaces will be deleted when the original secret is deleted.\n***WARNING*** This can be very dangerous to set, and is not recommended unless you are _absolutely certain_ it fits your use case ***WARNING***")
+	cmdVersion = cmd.Flags().Bool(
 		"version", false, "Output version information")
 	verbose = cmd.Flags().BoolP("verbose", "v", false, "Enable verbose logging")
 	return cmd
+}
+
+func main() {
+	cmd := reflector()
+	if err := cmd.Execute(); err != nil {
+		return
+	}
 }

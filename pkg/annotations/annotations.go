@@ -1,10 +1,13 @@
 package annotations
 
 import (
-	"errors"
+	"context"
 	"strings"
 
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 const (
@@ -36,8 +39,33 @@ func GetAnnotations(secret *v1.Secret) map[string]string {
 	return map[string]string{}
 }
 
-// ParseNamespaces fetches the list of namespaces from the correct annotation
-func ParseNamespaces(str string) ([]string, error) {
+// ParseOrFetchNamespaces parses the namespaces of a secret from the specified
+// annotation and retrives either all namespaces (if `*` is in the
+// field of the annotation) or the specified namespaces. An empty annotation yields no namespaces.
+func ParseOrFetchNamespaces(
+	ctx context.Context,
+	client corev1.CoreV1Interface,
+	objAnnotations map[string]string,
+) ([]string, error) {
+	// parse the annotations
+	namespaces, err := parseNamespaces(
+		objAnnotations[NamespaceAnnotation])
+	if errors.Is(err, ErrorNoNamespace) {
+		return []string{}, nil
+	} else if len(namespaces) == 0 {
+		found, err := client.Namespaces().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return []string{}, errors.Wrap(err, "unable to list namespaces")
+		}
+		for _, namespace := range found.Items {
+			namespaces = append(namespaces, namespace.Name)
+		}
+	}
+	return namespaces, nil
+}
+
+// parseNamespaces fetches the list of namespaces from the correct annotation
+func parseNamespaces(str string) ([]string, error) {
 	if str == "" {
 		return []string{}, ErrorNoNamespace
 	}

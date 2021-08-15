@@ -33,14 +33,25 @@ func reflectToNamespaces(
 			Observe(start.Sub(time.Now()).Seconds())
 	}()
 
+	// shortcircuit if we have the best case of `do nothing`
+	if len(namespaces) == 0 {
+		logger.Info().
+			Msg("no namespaces in annotation, skipping")
+		return nil
+	}
+
+	// hash the og -- TODO is crc64 good enough here?
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(sec.String())))
+
 	// if reflections are synchronous, do the easy thing
 	if concurrency <= 1 {
 		for _, namespace := range namespaces {
 			if err := instrumentedReflect(
 				ctx,
-				logger,
+				logger.With().Str("reflectionNamespace", namespace).Logger(),
 				client.Secrets(namespace),
 				sec,
+				hash,
 				reflect,
 			); err != nil {
 				return err
@@ -49,7 +60,7 @@ func reflectToNamespaces(
 		return nil
 	}
 	return reflectToNamespacesBatching(
-		ctx, logger, client, sec, namespaces, concurrency)
+		ctx, logger, client, sec, namespaces, concurrency, hash)
 }
 
 func reflectToNamespacesBatching(
@@ -59,6 +70,7 @@ func reflectToNamespacesBatching(
 	sec *v1.Secret,
 	namespaces []string,
 	concurrency int,
+	hash string,
 ) error {
 	counter := 0
 	limit := len(namespaces)
@@ -68,25 +80,33 @@ func reflectToNamespacesBatching(
 	errChan := make(chan error, concurrency)
 	for ind, namespace := range namespaces {
 		counter++
+		batchInd := counter
+		ns := namespace
 
 		// spin off a goroutine for every level of concurrency
 		wg.Add(1)
-		go func() {
+		go func(batchIndex int, singleNs string) {
 			defer wg.Done()
 			if err := instrumentedReflect(
 				ctx,
-				logger,
-				client.Secrets(namespace),
+				logger.With().
+					Str("reflectionNamespace", namespace).
+					Int("batchIndex", batchIndex).
+					Logger(),
+				client.Secrets(singleNs),
 				sec,
+				hash,
 				reflect,
 			); err != nil {
 				errChan <- err
 			}
-		}()
+		}(batchInd, ns)
 
 		// wait for each batch to finish and then check if we have errors
 		if counter >= concurrency || ind == limit {
-			logger.Info().Int("concurrency", concurrency).Msg("beginning wait for batch to finish")
+			logger.Info().
+				Int("concurrency", concurrency).
+				Msg("beginning wait for batch to finish")
 			wg.Wait()
 
 			// don't block on errors if there are none on the channel
@@ -106,9 +126,11 @@ func instrumentedReflect(
 	logger zerolog.Logger,
 	client corev1.SecretInterface,
 	og *v1.Secret,
+	hash string,
 	reflectFn func(
 		context.Context, zerolog.Logger,
 		corev1.SecretInterface, *v1.Secret,
+		string,
 	) error,
 ) error {
 	start := time.Now()
@@ -117,7 +139,7 @@ func instrumentedReflect(
 			WithLabelValues(og.Name, og.Namespace).
 			Observe(start.Sub(time.Now()).Seconds())
 	}()
-	return reflectFn(ctx, logger, client, og)
+	return reflectFn(ctx, logger, client, og, hash)
 }
 
 func reflect(
@@ -125,6 +147,7 @@ func reflect(
 	logger zerolog.Logger,
 	client corev1.SecretInterface,
 	og *v1.Secret,
+	hash string,
 	// namespace string,
 ) error {
 	// reflect to the new namespace
@@ -133,10 +156,9 @@ func reflect(
 	reflected, err := client.Get(ctx, og.Name, metav1.GetOptions{})
 	exists := !apierrors.IsNotFound(err)
 	if err != nil && exists {
+		logger.Error().Err(err).Msg("error while fetching secret from reflection namespace")
 		return errors.Wrap(err, "error while getting reflected secret")
 	}
-	// hash the og -- TODO is crc64 good enough here?
-	ogHash := fmt.Sprintf("%x", sha256.Sum256([]byte(og.String())))
 
 	// if it does exist, check the hash to see if we need to update
 	if exists {
@@ -149,8 +171,8 @@ func reflect(
 			return nil
 		}
 
-		if reflectHash == ogHash {
-			logger.Info().Str("hash", ogHash).Msg("No changes to secret, not updating")
+		if reflectHash == hash {
+			logger.Debug().Str("hash", hash).Msg("No changes to secret, not updating")
 			return nil
 		}
 	}
@@ -158,13 +180,25 @@ func reflect(
 	// DeepCopy and fix the annotations
 	toReflect := og.DeepCopy()
 
-	// remove the reflection annotation so we don't get recursive reflection somewhere
+	// remove the reflection annotations so we don't get recursive reflection somewhere
 	delete(toReflect.Annotations, annotations.ReflectAnnotation)
+	delete(toReflect.Annotations, annotations.NamespaceAnnotation)
+
 	// TODO: is this necessary?
 	// toReflect.Namespace = namespace
 	toReflect.Annotations[annotations.ReflectedFromAnnotation] = og.Namespace
 	toReflect.Annotations[annotations.ReflectedAtAnnotation] = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
-	toReflect.Annotations[annotations.ReflectionHashAnnotation] = ogHash
+	toReflect.Annotations[annotations.ReflectionHashAnnotation] = hash
+
+	action := "create"
+	if exists {
+		action = "update"
+	}
+	logger.Debug().
+		Str("action", action).
+		Str("secret", toReflect.Name).
+		Str("namespace", toReflect.Namespace).
+		Msg("performing action for reflected secret")
 
 	return createOrUpdateSecret(ctx, client, toReflect, exists)
 }
@@ -198,28 +232,4 @@ func createOrUpdateSecret(
 		return errors.Wrap(err, "error while creating secret")
 	}
 	return nil
-}
-
-func parseNamespaces(
-	ctx context.Context,
-	client corev1.CoreV1Interface,
-	objAnnotations map[string]string,
-) ([]string, error) {
-	// parse the annotations
-	namespaces, err := annotations.ParseNamespaces(
-		objAnnotations[annotations.NamespaceAnnotation])
-	if errors.Is(err, annotations.ErrorNoNamespace) {
-		// TODO log something
-		return []string{}, nil
-	} else if len(namespaces) == 0 {
-		// TODO fetch namespaces
-		found, err := client.Namespaces().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			return []string{}, errors.Wrap(err, "unable to list namespaces")
-		}
-		for _, namespace := range found.Items {
-			namespaces = append(namespaces, namespace.Name)
-		}
-	}
-	return namespaces, nil
 }
