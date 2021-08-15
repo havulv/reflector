@@ -76,6 +76,7 @@ func (r *reflector) next() bool {
 
 	// Invoke the method containing the business logic
 	err := r.sync(key.(string))
+
 	// Handle the error if something went wrong during the execution of the business logic
 	r.handleErr(err, key)
 	return true
@@ -176,6 +177,9 @@ func (r *reflector) reflect(ctx context.Context, og *v1.Secret, namespace string
 
 	// DeepCopy and fix the annotations
 	toReflect := og.DeepCopy()
+
+	// remove the reflection annotation so we don't get recursive reflection somewhere
+	delete(toReflect.Annotations, annotations.ReflectAnnotation)
 	toReflect.Annotations[annotations.ReflectedFromAnnotation] = og.Namespace
 	toReflect.Annotations[annotations.ReflectedAtAnnotation] = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 	toReflect.Annotations[annotations.ReflectionHashAnnotation] = ogHash
@@ -237,7 +241,6 @@ func (r *reflector) Start(ctx context.Context) error {
 	// Wait for all involved caches to be synced, before processing items from the queue is started
 	if !cache.WaitForCacheSync(stop, r.controller.HasSynced) {
 		err := fmt.Errorf("Timed out waiting for caches to sync")
-		runtime.HandleError(err)
 		return err
 	}
 
