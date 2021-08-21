@@ -6,22 +6,29 @@ import (
 )
 
 var (
-	commitHash string
-	commitDate string
-	semVer     string
+	// CommitHash is the commit hash of this version
+	CommitHash string
+	// CommitDate is the date at which the last commit was made
+	CommitDate string
+	// SemVer is the semantic version of the reflector
+	SemVer string
+
+	// OutputFunc is a variable for the printer that will dump
+	// the version out (to avoid cluttering test logs).
+	OutputFunc = fmt.Printf
 )
 
 // DumpVersion dumps the version information set at compile time
 // by the linker.
 func DumpVersion() error {
-	if semVer == "" && commitHash == "" && commitDate == "" {
+	if SemVer == "" && CommitHash == "" && CommitDate == "" {
 		return errors.New(
 			"version information not linked at compile time")
 	}
-	fmt.Printf(`
+	OutputFunc(`
 Version: %s
 Commit: %s
 Date: %s
-`, semVer, commitHash, commitDate)
+`, SemVer, CommitHash, CommitDate)
 	return nil
 }

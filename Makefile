@@ -35,15 +35,15 @@ ${GOPATH}/bin/mockery:
 	@hash mockery || go get github.com/vektra/mockery/v2/.../
 
 
-mock/gen: ${GOPATH}/bin/mockery \
-		pkg/reflect/reflect_mock.go \
-		pkg/server/metrics_server_mock.go #help: Generates mocks for various interfaces in the repository
+gen/mock: ${GOPATH}/bin/mockery \
+		pkg/mocks/reflect_mock.go \
+		pkg/mocks/metrics_server_mock.go #help: Generates mocks for various interfaces in the repository
 
-pkg/reflect/reflect_mock.go: pkg/reflect/reflect.go
-	@mockery --dir pkg/reflect/ --name Reflector --filename reflect_mock.go
+pkg/mocks/reflect_mock.go: pkg/reflect/reflect.go
+	@mockery --dir pkg/reflect/ --name Reflector --filename reflect_mock.go --output ./pkg/mocks
 
-pkg/server/metrics_server_mock.go: pkg/server/server.go
-	@mockery --dir pkg/server/ --name MetricsServer --filename metrics_server_mock.go
+pkg/mocks/metrics_server_mock.go: pkg/server/server.go
+	@mockery --dir pkg/server/ --name MetricsServer --filename metrics_server_mock.go --output ./pkg/mocks
 
 
 test: #help: Runs all tests quietly. Use TIMEOUT to specify a timeout, GENERATE_JUNIT to generate junit XML from the tests, and FLAGS to set extra flags for the test run.
