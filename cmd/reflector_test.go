@@ -42,9 +42,10 @@ func createMocks(
 }
 
 func TestStartReflector(t *testing.T) {
-	buf := bytes.NewBuffer([]byte{})
-	logger := zerolog.New(buf)
 	t.Run("tests that version dumps the version", func(t *testing.T) {
+		buf := bytes.NewBuffer([]byte{})
+		logger := zerolog.New(buf)
+		t.Parallel()
 		_, _, metricsServer, newReflector := createMocks(
 			func(s string) {}, func(a int, b int, c int, d bool, e string) {})
 
@@ -68,6 +69,9 @@ func TestStartReflector(t *testing.T) {
 	})
 
 	t.Run("tests that namespace is not grabbed from the environment", func(t *testing.T) {
+		buf := bytes.NewBuffer([]byte{})
+		logger := zerolog.New(buf)
+		t.Parallel()
 		verbose := false
 		namespace := "default"
 		conn := 0
@@ -97,6 +101,9 @@ func TestStartReflector(t *testing.T) {
 	})
 
 	t.Run("tests that metrics are run when set", func(t *testing.T) {
+		buf := bytes.NewBuffer([]byte{})
+		logger := zerolog.New(buf)
+		t.Parallel()
 		ns := "default"
 		addr := "localhost:8080"
 		metrics := true
@@ -130,6 +137,7 @@ func TestStartReflector(t *testing.T) {
 	})
 
 	t.Run("tests that metrics errors are logged", func(t *testing.T) {
+		t.Parallel()
 		ns := "default"
 		addr := "localhost:8080"
 		metrics := true
@@ -169,6 +177,7 @@ func TestStartReflector(t *testing.T) {
 	})
 
 	t.Run("tests that reflector errors are caught", func(t *testing.T) {
+		t.Parallel()
 		ns := ""
 		addr := "localhost:8080"
 		metrics := true
@@ -209,6 +218,9 @@ func TestStartReflector(t *testing.T) {
 	})
 
 	t.Run("tests that starting reflector errors are caught", func(t *testing.T) {
+		t.Parallel()
+		buf := bytes.NewBuffer([]byte{})
+		logger := zerolog.New(buf)
 		ns := "default"
 		addr := "localhost:8080"
 		metrics := true
@@ -244,6 +256,7 @@ func TestStartReflector(t *testing.T) {
 
 func TestReflectorCmd(t *testing.T) {
 	t.Run("tests that the command has sane defaults set", func(t *testing.T) {
+		t.Parallel()
 		rCmd := reflectorCmd()
 		assert.Equal(t, rCmd.Use, "reflector")
 		assert.Greater(t, len(rCmd.Short), 0)
@@ -254,6 +267,7 @@ func TestReflectorCmd(t *testing.T) {
 
 func TestMain(t *testing.T) {
 	t.Run("runs with no error", func(t *testing.T) {
+		t.Parallel()
 		altCmd := startCmd
 		startCmd = func() *cobra.Command {
 			return &cobra.Command{}
@@ -264,6 +278,7 @@ func TestMain(t *testing.T) {
 		main()
 	})
 	t.Run("runs with error", func(t *testing.T) {
+		t.Parallel()
 		altCmd := startCmd
 		startCmd = func() *cobra.Command {
 			return &cobra.Command{

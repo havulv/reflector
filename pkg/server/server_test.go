@@ -34,6 +34,7 @@ func TestHealthcheck(t *testing.T) {
 	for _, l := range tests {
 		test := l
 		t.Run(test.d, func(t *testing.T) {
+			t.Parallel()
 			f := healthcheck(&test.val)
 			w := httptest.NewRecorder()
 			f(w, nil)
@@ -45,6 +46,7 @@ func TestHealthcheck(t *testing.T) {
 
 func TestNewMetricsServer(t *testing.T) {
 	t.Run("creates a new metrics server", func(t *testing.T) {
+		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		l := zerolog.New(buf)
 		addr := "localhost:8083"
@@ -57,6 +59,7 @@ func TestNewMetricsServer(t *testing.T) {
 
 func TestRun(t *testing.T) {
 	t.Run("runs the metrics server and shuts it down", func(t *testing.T) {
+		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		l := zerolog.New(buf)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -80,6 +83,7 @@ func TestRun(t *testing.T) {
 
 func TestServe(t *testing.T) {
 	t.Run("serves metrics and shuts down", func(t *testing.T) {
+		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		l := zerolog.New(buf)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -105,6 +109,7 @@ func TestServe(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	t.Run("shuts down a server", func(t *testing.T) {
+		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		l := zerolog.New(buf)
 		ctx, cancel := context.WithCancel(context.Background())

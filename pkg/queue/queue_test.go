@@ -10,6 +10,7 @@ import (
 )
 
 func TestCreateSecretsWorkQueue(t *testing.T) {
+	t.Parallel()
 	// this doesn't work because I don't understand how to add
 	// to the informer queue
 	// ctx, cancel := context.WithCancel(context.Background())

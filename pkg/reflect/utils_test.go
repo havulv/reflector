@@ -26,6 +26,7 @@ func TestWaitUntilError(t *testing.T) {
 	for _, l := range tests {
 		test := l
 		t.Run(test.d, func(t *testing.T) {
+			t.Parallel()
 			wg := sync.WaitGroup{}
 			errChan := make(chan error, 1)
 			wg.Add(1)

@@ -66,6 +66,7 @@ func TestParseOrFetchNamespaces(t *testing.T) {
 	for _, l := range tests {
 		test := l
 		t.Run(test.descrip, func(t *testing.T) {
+			t.Parallel()
 			client := fake.NewSimpleClientset()
 			if len(test.fetched) > 0 {
 				nsList := &v1.NamespaceList{Items: []v1.Namespace{}}
@@ -136,6 +137,7 @@ func TestParseNamespaces(t *testing.T) {
 	for _, l := range tests {
 		test := l
 		t.Run(test.d, func(t *testing.T) {
+			t.Parallel()
 			s, err := parseNamespaces(test.in)
 			assert.Equal(t, s, test.out)
 			assert.Equal(t, err, test.err)
