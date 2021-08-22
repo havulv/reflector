@@ -270,6 +270,8 @@ func TestMain(t *testing.T) {
 				RunE: func(cmd *cobra.Command, args []string) error {
 					return errors.New("error")
 				},
+				SilenceUsage:  true,
+				SilenceErrors: true,
 			}
 		}
 		defer func() {

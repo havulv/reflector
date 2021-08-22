@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -33,11 +32,6 @@ var (
 	// ErrorNoNamespace is used when no namespaces are supplied
 	ErrorNoNamespace = errors.New("no namespace given")
 )
-
-// GetAnnotations fetches the relevant annotations from a secret
-func GetAnnotations(secret *v1.Secret) map[string]string {
-	return map[string]string{}
-}
 
 // ParseOrFetchNamespaces parses the namespaces of a secret from the specified
 // annotation and retrives either all namespaces (if `*` is in the
@@ -74,5 +68,11 @@ func parseNamespaces(str string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	return strings.Split(str, ","), nil
+	// split and trim spaces
+	split := strings.Split(str, ",")
+	for i, s := range split {
+		split[i] = strings.Trim(s, " ")
+	}
+
+	return split, nil
 }

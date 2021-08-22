@@ -116,13 +116,12 @@ func (r *reflector) process(key string) error {
 	}
 
 	// fetch the secret object's annotations
-	objAnnotations := annotations.GetAnnotations(sec)
-	if objAnnotations[annotations.ReflectAnnotation] != "true" {
+	if shouldReflect, ok := sec.Annotations[annotations.ReflectAnnotation]; !ok || shouldReflect != "true" {
 		return nil
 	}
 
 	namespaces, err := annotations.ParseOrFetchNamespaces(
-		ctx, r.core, objAnnotations)
+		ctx, r.core, sec.Annotations)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse namespaces")
 	}

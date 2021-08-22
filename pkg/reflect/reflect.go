@@ -162,10 +162,8 @@ func reflect(
 
 	// if it does exist, check the hash to see if we need to update
 	if exists {
-		reflectedAnn := annotations.GetAnnotations(reflected)
-
 		// if we can't find the hash annotation, then we don't own it
-		reflectHash, ok := reflectedAnn[annotations.ReflectionHashAnnotation]
+		reflectHash, ok := reflected.Annotations[annotations.ReflectionHashAnnotation]
 		if !ok {
 			logger.Info().Msg("We don't own this secret: not updating")
 			return nil
