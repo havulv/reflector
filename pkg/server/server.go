@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -23,25 +24,33 @@ type MetricsServer interface {
 type server struct {
 	http.Server
 	logger zerolog.Logger
+	alive  int32
+	ready  int32
+}
+
+func healthcheck(healthInt *int32) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if atomic.LoadInt32(healthInt) != 0 {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
 }
 
 // NewMetricsServer creates a new server for serving metrics
 func NewMetricsServer(logger zerolog.Logger, address string) MetricsServer {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
-
-	// TODO: implement truthy healthz and ready endpoints
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		return
-	})
-	mux.HandleFunc("/ready", func(w http.ResponseWriter, req *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		return
-	})
 	s := &server{
 		logger: logger,
+		alive:  0,
+		ready:  0,
 	}
+
+	mux.HandleFunc("/healthz", healthcheck(&(s.alive)))
+	mux.HandleFunc("/ready", healthcheck(&(s.ready)))
 
 	s.Addr = address
 	s.ReadTimeout = readTimeout
@@ -58,8 +67,10 @@ func (s *server) Run(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		atomic.StoreInt32(&(s.alive), 1)
 		serve(s, s.logger, cancel)
 	}()
+	atomic.StoreInt32(&(s.ready), 1)
 	return shutdown(
 		serverCtx, s, s.logger, &wg)
 }
@@ -75,7 +86,6 @@ func serve(s *server, logger zerolog.Logger, cancel func()) {
 		logger.Error().
 			Err(srvErr).
 			Msg("Error while listening and serving")
-		return
 	}
 	logger.Info().Msg("Server shut down")
 }

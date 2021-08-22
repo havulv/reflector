@@ -59,6 +59,10 @@ func NewReflector(
 		return nil, errors.Wrap(err, "unable to create clientset with in cluster config")
 	}
 
+	if reflectConcurrency <= 1 {
+		reflectConcurrency = 1
+	}
+
 	queue, indexer, controller := queue.CreateSecretsWorkQueue(
 		clientset.CoreV1(), namespace)
 
@@ -127,15 +131,10 @@ func (r *reflector) process(key string) error {
 	}
 
 	if !exists && r.cascadeDelete {
-		if r.reflectConcurrency <= 1 {
-			return cascadeDeletion(
-				ctx,
-				ctxLogger,
-				r.core,
-				sec.Name,
-				namespaces)
-		}
-		return cascadeDeleteConcurrent(
+		// if concurrency <= 1 then we are gauranteed
+		// to have concurrency 1 as long as the reflector
+		// was constructed properly
+		return cascadeDelete(
 			ctx,
 			ctxLogger,
 			r.core,
