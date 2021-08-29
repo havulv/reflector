@@ -34,13 +34,13 @@ func CreateSecretsWorkQueue(
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
-				queue.Add(key)
+				queue.AddRateLimited(key)
 			}
 		},
 		UpdateFunc: func(old interface{}, new interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(new)
 			if err == nil {
-				queue.Add(key)
+				queue.AddRateLimited(key)
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -48,7 +48,7 @@ func CreateSecretsWorkQueue(
 			// key function.
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
-				queue.Add(key)
+				queue.AddRateLimited(key)
 			}
 		},
 	}, cache.Indexers{})

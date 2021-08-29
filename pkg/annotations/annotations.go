@@ -26,12 +26,25 @@ const (
 	ReflectedAtAnnotation = Prefix + "/reflected-at"
 	// ReflectionHashAnnotation is a hash of the reflected secret for quick comparison
 	ReflectionHashAnnotation = Prefix + "/hash"
+	// ReflectionOwnerAnnotation denotes that the reflected secret is owned by the reflector
+	// and can be created or deleted at will or that it is owned by some other entity
+	ReflectionOwnerAnnotation = Prefix + "owner"
+	// ReflectionOwned is the key to determine if a secret is owned by any reflector
+	ReflectionOwned = "reflector"
 )
 
 var (
 	// ErrorNoNamespace is used when no namespaces are supplied
 	ErrorNoNamespace = errors.New("no namespace given")
 )
+
+// CanOperate checks if an operation can be performed on an existing secret
+func CanOperate(annotations map[string]string) bool {
+	if annotations[ReflectionOwnerAnnotation] == ReflectionOwned {
+		return true
+	}
+	return false
+}
 
 // ParseOrFetchNamespaces parses the namespaces of a secret from the specified
 // annotation and retrives either all namespaces (if `*` is in the

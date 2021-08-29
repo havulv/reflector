@@ -11,6 +11,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/havulv/reflector/cmd/version"
 	"github.com/havulv/reflector/pkg/reflect"
@@ -29,12 +32,23 @@ type ReflectorArgs struct {
 	ReflectCon    *int
 	Retries       *int
 	CascadeDelete *bool
+	KubeConfig    *string
 }
 
 func startReflector(
 	logger zerolog.Logger,
-	newMetricsServer func(zerolog.Logger, string) server.MetricsServer,
-	newReflector func(zerolog.Logger, int, int, int, bool, string) (reflect.Reflector, error),
+	newMetricsServer func(
+		zerolog.Logger,
+		string,
+	) server.MetricsServer,
+	newReflector func(
+		zerolog.Logger,
+		kubernetes.Interface,
+		int, int, int,
+		bool,
+		string,
+	) (reflect.Reflector, error),
+	clientClosure func(*string) (kubernetes.Interface, error),
 	rArgs ReflectorArgs,
 ) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -46,6 +60,11 @@ func startReflector(
 
 		if *rArgs.Namespace == "" {
 			*rArgs.Namespace = os.Getenv("POD_NAMESPACE")
+		}
+
+		client, err := clientClosure(rArgs.KubeConfig)
+		if err != nil {
+			return errors.Wrap(err, "unable to create k8s client")
 		}
 
 		// Ensure that, if either component goes through
@@ -79,6 +98,7 @@ func startReflector(
 
 		reflector, err := newReflector(
 			logger.With().Str("component", "reflector").Logger(),
+			client,
 			*rArgs.ReflectCon,
 			*rArgs.WorkerCon,
 			*rArgs.Retries,
@@ -105,6 +125,33 @@ func startReflector(
 	}
 }
 
+// TODO: we can test this, but it is really troublesome because it takes a lot
+// of closures and mocking to do for little gain. The TODO is to actually test it though
+func createK8sClient(
+	kubeconfig *string,
+) (kubernetes.Interface, error) {
+	var err error
+	var config *rest.Config
+	if kubeconfig == nil {
+		// creates the in-cluster config
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to get cluster config")
+		}
+	} else {
+		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to create config from kubeconfig")
+		}
+	}
+	// creates the clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create clientset with in cluster config")
+	}
+	return clientset, nil
+}
+
 func reflectorCmd() *cobra.Command {
 	args := ReflectorArgs{}
 	cmd := &cobra.Command{
@@ -118,6 +165,7 @@ to others.  `, " "),
 			setupLogger(),
 			server.NewMetricsServer,
 			reflect.NewReflector,
+			createK8sClient,
 			args),
 	}
 

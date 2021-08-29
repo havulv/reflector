@@ -177,11 +177,12 @@ func TestInstrumentedReflect(t *testing.T) {
 
 func TestReflect(t *testing.T) {
 	tests := []struct {
-		d      string
-		secret *v1.Secret
-		exists bool
-		hash   string
-		getErr error // error on fetching secret -- not found
+		d             string
+		secret        *v1.Secret
+		exists        bool
+		hash          string
+		getErr        error // error on fetching secret -- not found
+		foundNoUpdate bool
 	}{
 		{
 			"a reflection creates a new secret if the secret is not found",
@@ -195,6 +196,7 @@ func TestReflect(t *testing.T) {
 			false,
 			"some-hash",
 			nil,
+			false,
 		},
 		{
 			"a failure to get the secret results in no reflection",
@@ -202,13 +204,14 @@ func TestReflect(t *testing.T) {
 			false,
 			"some-hash",
 			errors.New("some get err"),
+			false,
 		},
 		{
 			"a found secret that doesn't need update is not reflected",
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "x",
-					Namespace: "blergh",
+					Namespace: "new-ns",
 					Annotations: map[string]string{
 						annotations.ReflectionHashAnnotation: "some-hash",
 					},
@@ -217,6 +220,7 @@ func TestReflect(t *testing.T) {
 			true,
 			"some-hash",
 			nil,
+			true,
 		},
 	}
 
@@ -237,10 +241,10 @@ func TestReflect(t *testing.T) {
 						return true, nil, test.getErr
 					})
 			}
-
+			buf := bytes.NewBuffer([]byte{})
 			err := reflect(
 				ctx,
-				zerolog.New(bytes.NewBuffer([]byte{})),
+				zerolog.New(buf),
 				client.CoreV1().Secrets("new-ns"),
 				test.secret,
 				"some-hash",
@@ -248,6 +252,9 @@ func TestReflect(t *testing.T) {
 			if test.getErr != nil {
 				assert.NotNil(t, err)
 				return
+			}
+			if test.foundNoUpdate {
+				assert.Contains(t, buf.String(), "not updating")
 			}
 			assert.Nil(t, err)
 			sec, err := client.CoreV1().Secrets("new-ns").Get(
@@ -279,7 +286,8 @@ func TestSecretNeedsUpdate(t *testing.T) {
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotations.ReflectionHashAnnotation: "some-hash",
+						annotations.ReflectionHashAnnotation:  "some-hash",
+						annotations.ReflectionOwnerAnnotation: annotations.ReflectionOwned,
 					},
 				},
 			},
@@ -290,11 +298,24 @@ func TestSecretNeedsUpdate(t *testing.T) {
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						annotations.ReflectionHashAnnotation: "other-hash",
+						annotations.ReflectionHashAnnotation:  "other-hash",
+						annotations.ReflectionOwnerAnnotation: annotations.ReflectionOwned,
 					},
 				},
 			},
 			true,
+		},
+		{
+			"no explicit owner does not update",
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						annotations.ReflectionHashAnnotation:  "other-hash",
+						annotations.ReflectionOwnerAnnotation: "oofta",
+					},
+				},
+			},
+			false,
 		},
 	}
 

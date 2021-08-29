@@ -150,7 +150,7 @@ func secretNeedsUpdate(
 	secret *v1.Secret,
 	hash string,
 ) bool {
-	// if we can't find the hash annotation, then we don't own it
+	// if there is no hash then we know we don't really own it and can short circuit
 	reflectHash, ok := secret.Annotations[annotations.ReflectionHashAnnotation]
 	if !ok {
 		logger.Info().Msg("We don't own this secret: not updating")
@@ -161,7 +161,9 @@ func secretNeedsUpdate(
 		logger.Debug().Str("hash", hash).Msg("No changes to secret, not updating")
 		return false
 	}
-	return true
+
+	// ownership is explicit -- if there is no ownership annotation then skip
+	return annotations.CanOperate(secret.Annotations)
 }
 
 func createNewSecret(
@@ -181,6 +183,7 @@ func createNewSecret(
 	toReflect.Annotations[annotations.ReflectedFromAnnotation] = secret.Namespace
 	toReflect.Annotations[annotations.ReflectedAtAnnotation] = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 	toReflect.Annotations[annotations.ReflectionHashAnnotation] = hash
+	toReflect.Annotations[annotations.ReflectionOwnerAnnotation] = annotations.ReflectionOwned
 	return toReflect
 }
 

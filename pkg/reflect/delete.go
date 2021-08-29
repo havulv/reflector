@@ -9,6 +9,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/havulv/reflector/pkg/annotations"
 )
 
 func cascadeDelete(
@@ -68,4 +70,30 @@ func deleteSecret(
 				"error while removing secret from the namspace")
 		}
 	}()
+}
+
+func findExistingSecretNamespaces(
+	ctx context.Context,
+	core corev1.CoreV1Interface,
+	name string,
+	namespace string,
+) ([]string, error) {
+	// fetch all namespaces
+	allNs, err := core.Namespaces().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return []string{}, errors.Wrap(err, "unable to list all namespaces")
+	}
+
+	namespaces := []string{}
+	for _, item := range allNs.Items {
+		found, err := core.Secrets(item.Name).Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return []string{}, errors.Wrap(err, "could not fetch secret for ns")
+		}
+		if annotations.CanOperate(found.Annotations) {
+			namespaces = append(namespaces, item.Name)
+		}
+	}
+
+	return namespaces, nil
 }
