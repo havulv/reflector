@@ -89,7 +89,10 @@ image:
 	docker build .
 
 image/local:
-	docker build . -t localhost:5000/havulv/reflector:latest
+	docker build . -t localhost:5000/havulv/reflector:latest \
+		--build-arg COMMIT_HASH="$(shell git rev-parse --short HEAD)" \
+		--build-arg SEMVER="$(shell git describe --tags --always --dirty)" \
+		--build-arg COMMIT_DATE="$(shell git log -1 --format=%ci)"
 	docker push localhost:5000/havulv/reflector:latest
 
 stop:

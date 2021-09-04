@@ -8,8 +8,6 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-
-	"github.com/havulv/reflector/pkg/annotations"
 )
 
 // RateLimiter is the minimal interface needed for a rate limiting
@@ -59,11 +57,13 @@ func CreateSecretsWorkQueue(
 	namespace string,
 ) (workqueue.RateLimitingInterface, cache.Indexer, cache.Controller) {
 	// create the pod watcher
+	// We must grab everything because we can't filter by labels or
+	// annotations
 	secretListWatcher := cache.NewListWatchFromClient(
 		core.RESTClient(),
 		"secrets",
 		namespace,
-		fields.SelectorFromSet(fields.Set{annotations.ReflectAnnotation: "true"}),
+		fields.Everything(),
 	)
 
 	// create the workqueue

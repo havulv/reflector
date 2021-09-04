@@ -1,11 +1,14 @@
 FROM golang:1.16.7 AS builder
 
+ARG COMMIT_HASH
+ARG SEMVER
+ARG COMMIT_DATE
+
 # Add the project
 ADD ./go.mod /go/src/github.com/havulv/reflector/
 ADD ./go.sum /go/src/github.com/havulv/reflector/
 ADD ./cmd/ /go/src/github.com/havulv/reflector/cmd/
 ADD ./pkg/ /go/src/github.com/havulv/reflector/pkg/
-ADD ./.git /go/src/github.com/havulv/reflector/
 
 RUN set -ex &&  \
   cd /go/src/github.com/havulv/reflector && \
@@ -19,9 +22,9 @@ RUN set -ex &&  \
         -a \
         -o ./reflector \
 		-ldflags "\
-          -X $(go list -m)/cmd/version.commitHash=$(git rev-parse --short HEAD) \
-		  -X $(go list -m)/cmd/version.semVer=$(git describe --tags --always --dirty) \
-		  -X '$(go list -m)/cmd/version.commitDate=$(git log -1 --format=%ci)' \
+          -X $(go list -m)/cmd/version.commitHash=\"$COMMIT_HASH\" \
+		  -X $(go list -m)/cmd/version.semVer=\"$SEMVER\" \
+		  -X '$(go list -m)/cmd/version.commitDate=\"$COMMIT_DATE\"' \
           -extldflags '-static'" \
          ./cmd/*.go && \
   mv ./reflector /usr/bin/reflector
