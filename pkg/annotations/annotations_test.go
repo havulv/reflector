@@ -13,6 +13,44 @@ import (
 	clienttesting "k8s.io/client-go/testing"
 )
 
+func TestCanOperate(t *testing.T) {
+	tests := []struct {
+		descrip string
+		ann     map[string]string
+		expect  bool
+	}{
+		{
+			"secret without the owner annotation will not be operated upon",
+			map[string]string{
+				ReflectedFromAnnotation: "thing",
+			},
+			false,
+		},
+		{
+			"secret with the right owner annotation but wrong owner will not be operated upon",
+			map[string]string{
+				ReflectionOwnerAnnotation: "temp-owner",
+			},
+			false,
+		},
+		{
+			"secret with the right owner annotation and right owner will be operated upon",
+			map[string]string{
+				ReflectionOwnerAnnotation: ReflectionOwned,
+			},
+			true,
+		},
+	}
+
+	for _, l := range tests {
+		test := l
+		t.Run(test.descrip, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, CanOperate(test.ann), test.expect)
+		})
+	}
+}
+
 func TestParseOrFetchNamespaces(t *testing.T) {
 	tests := []struct {
 		descrip     string
@@ -29,7 +67,7 @@ func TestParseOrFetchNamespaces(t *testing.T) {
 			},
 			[]string{},
 			[]string{},
-			nil,
+			ErrorNoNamespace,
 			nil,
 		},
 		{

@@ -12,9 +12,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/havulv/reflector/cmd/k8s"
 	"github.com/havulv/reflector/cmd/version"
 	"github.com/havulv/reflector/pkg/reflect"
 	"github.com/havulv/reflector/pkg/server"
@@ -125,33 +124,6 @@ func startReflector(
 	}
 }
 
-// TODO: we can test this, but it is really troublesome because it takes a lot
-// of closures and mocking to do for little gain. The TODO is to actually test it though
-func createK8sClient(
-	kubeconfig *string,
-) (kubernetes.Interface, error) {
-	var err error
-	var config *rest.Config
-	if kubeconfig == nil {
-		// creates the in-cluster config
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to get cluster config")
-		}
-	} else {
-		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to create config from kubeconfig")
-		}
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create clientset with in cluster config")
-	}
-	return clientset, nil
-}
-
 func reflectorCmd() *cobra.Command {
 	args := ReflectorArgs{}
 	cmd := &cobra.Command{
@@ -165,7 +137,7 @@ to others.  `, " "),
 			setupLogger(),
 			server.NewMetricsServer,
 			reflect.NewReflector,
-			createK8sClient,
+			k8s.CreateK8sClient,
 			args),
 	}
 

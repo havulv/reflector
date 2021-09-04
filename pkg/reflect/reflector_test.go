@@ -11,9 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/havulv/reflector/pkg/annotations"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
+	clienttesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	fcache "k8s.io/client-go/tools/cache/testing"
 	"k8s.io/client-go/util/workqueue"
@@ -136,12 +140,13 @@ func TestProcess(t *testing.T) {
 		secret        *v1.Secret
 		cascadeDelete bool
 		err           error
+		nsErr         error
 		rm            bool
 		checkLogs     string
 	}{
 		{
 			"does not update if deleted and no cascade delete",
-			"secret",
+			"thing/secret",
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "secret",
@@ -150,8 +155,77 @@ func TestProcess(t *testing.T) {
 			},
 			false,
 			nil,
+			nil,
 			true,
 			"cascadeDelete",
+		},
+		{
+			"deletes if deleted and cascade delete",
+			"thing/secret",
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "thing",
+				},
+			},
+			true,
+			nil,
+			nil,
+			true,
+			"",
+		},
+		{
+			"fails to cascade delete due to namespace error",
+			"thing/secret",
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "thing",
+				},
+			},
+			true,
+			errors.New("some error"),
+			errors.New("some error"),
+			true,
+			"",
+		},
+		{
+			"reflects a secret with the right namespaces",
+			"thing/secret",
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "thing",
+					Annotations: map[string]string{
+						annotations.ReflectAnnotation:   "true",
+						annotations.NamespaceAnnotation: "ns1,ns2",
+					},
+				},
+			},
+			false,
+			nil,
+			nil,
+			false,
+			"",
+		},
+		{
+			"fails to reflect a secret with a bad annotation",
+			"thing/secret",
+			&v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "secret",
+					Namespace: "thing",
+					Annotations: map[string]string{
+						annotations.ReflectAnnotation:   "true",
+						annotations.NamespaceAnnotation: "",
+					},
+				},
+			},
+			false,
+			errors.New("some error"),
+			errors.New("some error"),
+			false,
+			"",
 		},
 	}
 	for _, l := range tests {
@@ -187,10 +261,19 @@ func TestProcess(t *testing.T) {
 					},
 				}, cache.Indexers{})
 
+			client := fake.NewSimpleClientset()
+			if test.nsErr != nil {
+				client.PrependReactor("*", "*",
+					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+						return true, nil, errors.New("some error")
+					})
+			}
+
 			buf := bytes.NewBuffer([]byte{})
 			r := reflector{
 				ctx:           context.Background(),
 				logger:        zerolog.New(buf),
+				core:          client.CoreV1(),
 				queue:         queue,
 				indexer:       indexer,
 				controller:    informer,
@@ -201,6 +284,7 @@ func TestProcess(t *testing.T) {
 				require.Nil(t, indexer.Delete(test.secret))
 			} else {
 				require.Nil(t, indexer.Add(test.secret))
+				t.Log(indexer)
 			}
 
 			if test.err != nil {
@@ -211,7 +295,9 @@ func TestProcess(t *testing.T) {
 
 			if test.checkLogs != "" {
 				assert.Contains(t, buf.String(), test.checkLogs)
+				return
 			}
+			t.Log(buf.String())
 		})
 	}
 

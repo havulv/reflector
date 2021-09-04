@@ -37,6 +37,7 @@ ${GOPATH}/bin/mockery:
 
 gen/mock: ${GOPATH}/bin/mockery \
 		pkg/mocks/reflect_mock.go \
+		pkg/mocks/rate_limiter_mock.go \
 		pkg/mocks/metrics_server_mock.go #help: Generates mocks for various interfaces in the repository
 
 pkg/mocks/reflect_mock.go: pkg/reflect/reflect.go
@@ -45,6 +46,8 @@ pkg/mocks/reflect_mock.go: pkg/reflect/reflect.go
 pkg/mocks/metrics_server_mock.go: pkg/server/server.go
 	@mockery --dir pkg/server/ --name MetricsServer --filename metrics_server_mock.go --output ./pkg/mocks
 
+pkg/mocks/rate_limiter_mock.go: pkg/queue/queue.go
+	@mockery --dir pkg/queue/ --name RateLimiter --filename rate_limiter_mock.go --output ./pkg/mocks
 
 test: #help: Runs all tests quietly. Use TIMEOUT to specify a timeout, GENERATE_JUNIT to generate junit XML from the tests, and FLAGS to set extra flags for the test run.
 	@mkdir -p ./test
@@ -77,10 +80,10 @@ coverage/show: test/coverage.out #help: Opens the browser with HTML browseable c
 regression:
 	@echo "Not yet implemented"
 
-debug: #help: Installs Delve, compiles a test binary, and runs dlv test
+debug/%: #help: Installs Delve, compiles a test binary, and runs dlv test
 	@hash dlv || go install github.com/go-delve/delve/cmd/dlv
-	@go test -c -o debug.test ./pkg/server/*.go
-	@dlv test
+	@go test -c -o debug.test ./pkg/$(shell basename $@)/*.go
+	@dlv test -wd ./cmd/
 
 image:
 	docker build .

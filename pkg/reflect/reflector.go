@@ -2,7 +2,6 @@ package reflect
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -99,13 +98,7 @@ func (r *reflector) process(key string) error {
 	// In the implementation of the cache, the returned error of GetByKey is always nil
 	obj, exists, _ := r.indexer.GetByKey(key)
 
-	var name, namespace string
-	if strings.Contains(key, "/") {
-		keySplit := strings.Split(key, "/")
-		namespace = keySplit[0]
-		name = strings.Join(keySplit[1:], "/")
-	}
-
+	name, namespace := queue.ParseWorkQueueKey(key)
 	ctxLogger := r.logger.With().
 		Str("rootNamespace", namespace).
 		Str("secret", name).Logger()
@@ -116,7 +109,7 @@ func (r *reflector) process(key string) error {
 			ctxLogger.Info().Msg("secret deleted and `cascadeDelete` not set, not attempting to delete reflected secrets")
 			return nil
 		}
-		namespaces, err := findExistingSecretNamespaces(ctx, r.core, name, namespace)
+		namespaces, err := findExistingSecretNamespaces(ctx, r.core, name)
 		if err != nil {
 			return errors.Wrap(err, "unable to find namespaces secret existed in")
 		}

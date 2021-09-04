@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
@@ -16,6 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
+
+	"github.com/havulv/reflector/pkg/annotations"
 )
 
 func namespaceGen(end int) []string {
@@ -194,6 +197,141 @@ func TestDeleteSecret(t *testing.T) {
 				}
 				t.Log("test succeded!")
 			}
+		})
+	}
+}
+
+func TestFindExistingSecretNamespaces(t *testing.T) {
+	tests := []struct {
+		descrip       string
+		name          string
+		namespaces    []string
+		listErr       error
+		secretErr     error
+		retSecrets    []*v1.Secret
+		retNamespaces *v1.NamespaceList
+	}{
+		{
+			"finds no namespaces to delete from",
+			"thing",
+			[]string{},
+			nil,
+			nil,
+			[]*v1.Secret{},
+			&v1.NamespaceList{
+				Items: []v1.Namespace{},
+			},
+		},
+		{
+			"returns errors when trying to list all namespaces",
+			"thing",
+			[]string{},
+			errors.New("some Error"),
+			nil,
+			[]*v1.Secret{},
+			&v1.NamespaceList{
+				Items: []v1.Namespace{},
+			},
+		},
+		{
+			"returns errors when trying to fetch a secret",
+			"thing",
+			[]string{},
+			nil,
+			errors.New("some Error"),
+			[]*v1.Secret{},
+			&v1.NamespaceList{
+				Items: []v1.Namespace{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "ns1",
+						},
+					},
+				},
+			},
+		},
+		{
+			"returns a list of namespaces with secrets",
+			"thing",
+			[]string{"ns1"},
+			nil,
+			nil,
+			[]*v1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "thing",
+						Namespace: "ns1",
+						Annotations: map[string]string{
+							annotations.ReflectionOwnerAnnotation: annotations.ReflectionOwned,
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "thing",
+						Namespace: "ns2",
+						Annotations: map[string]string{
+							annotations.ReflectionOwnerAnnotation: "other",
+						},
+					},
+				},
+			},
+			&v1.NamespaceList{
+				Items: []v1.Namespace{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "ns1",
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "ns2",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, l := range tests {
+		test := l
+		t.Run(test.descrip, func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Second))
+			defer cancel()
+
+			client := fake.NewSimpleClientset()
+			if len(test.retSecrets) > 0 {
+				t := client.Tracker()
+				for _, s := range test.retSecrets {
+					t.Add(s)
+				}
+			}
+
+			if test.retNamespaces != nil {
+				t := client.Tracker()
+				t.Add(test.retNamespaces)
+			}
+
+			if test.listErr != nil {
+				client.PrependReactor("list", "*",
+					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+						return true, nil, test.listErr
+					})
+			}
+
+			if test.secretErr != nil {
+				client.PrependReactor("get", "*",
+					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+						return true, nil, test.secretErr
+					})
+			}
+			ns, err := findExistingSecretNamespaces(ctx, client.CoreV1(), test.name)
+			if test.listErr != nil || test.secretErr != nil {
+				assert.NotNil(t, err)
+				return
+			}
+			assert.Equal(t, test.namespaces, ns)
 		})
 	}
 }

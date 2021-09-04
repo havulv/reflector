@@ -57,8 +57,8 @@ func ParseOrFetchNamespaces(
 	// parse the annotations
 	namespaces, err := parseNamespaces(
 		objAnnotations[NamespaceAnnotation])
-	if errors.Is(err, ErrorNoNamespace) {
-		return []string{}, nil
+	if err != nil {
+		return []string{}, err
 	} else if len(namespaces) == 0 {
 		found, err := client.Namespaces().List(ctx, metav1.ListOptions{})
 		if err != nil {

@@ -76,7 +76,6 @@ func findExistingSecretNamespaces(
 	ctx context.Context,
 	core corev1.CoreV1Interface,
 	name string,
-	namespace string,
 ) ([]string, error) {
 	// fetch all namespaces
 	allNs, err := core.Namespaces().List(ctx, metav1.ListOptions{})
