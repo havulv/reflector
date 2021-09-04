@@ -48,7 +48,7 @@ func startReflector(
 		string,
 	) (reflect.Reflector, error),
 	clientClosure func(*string) (kubernetes.Interface, error),
-	rArgs ReflectorArgs,
+	rArgs *ReflectorArgs,
 ) func(*cobra.Command, []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -138,9 +138,12 @@ to others.  `, " "),
 			server.NewMetricsServer,
 			reflect.NewReflector,
 			k8s.CreateK8sClient,
-			args),
+			&args),
 	}
 
+	args.KubeConfig = cmd.Flags().String(
+		"kube-config", "",
+		"The path to a kubernetes configuration if running outside a cluster")
 	args.Namespace = cmd.Flags().StringP(
 		"namespace", "n", "",
 		`The namespace to sync secrets from`)

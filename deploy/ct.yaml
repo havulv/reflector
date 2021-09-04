@@ -1,4 +1,4 @@
-helm-extra-args: --timeout 60s
+helm-extra-args: --timeout 60s --set image.registry="localhost:5000" --set image.tag="latest" --debug
 chart-dirs:
 - chart
 charts:

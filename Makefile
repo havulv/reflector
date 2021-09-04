@@ -26,10 +26,10 @@ clean: #help: Cleans out all temporary files created from test runs
 build: reflector
 
 reflector: $(shell find ./ -type f -name *.go) #help: Builds the reflector and inserts some helpful variables at link time.
-	go build -ldflags \
+	go build -o ./reflector -ldflags \
 		"-X $$(go list -m)/cmd/version.commitHash=$$(git rev-parse --short HEAD) \
 		-X $$(go list -m)/cmd/version.semVer=$$(git describe --tags --always --dirty) \
-		-X '$$(go list -m)/cmd/version.commitDate=$$(git log -1 --format=%ci)'" ./cmd/reflector.go
+		-X '$$(go list -m)/cmd/version.commitDate=$$(git log -1 --format=%ci)'" ./cmd/*.go
 
 ${GOPATH}/bin/mockery:
 	@hash mockery || go get github.com/vektra/mockery/v2/.../
@@ -87,3 +87,10 @@ debug/%: #help: Installs Delve, compiles a test binary, and runs dlv test
 
 image:
 	docker build .
+
+image/local:
+	docker build . -t localhost:5000/havulv/reflector:latest
+	docker push localhost:5000/havulv/reflector:latest
+
+stop:
+	docker stop `docker ps -aq` 2> /dev/null && docker rm `docker ps -aq` 2> /dev/null; :

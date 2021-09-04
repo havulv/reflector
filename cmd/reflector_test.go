@@ -65,7 +65,7 @@ func TestStartReflector(t *testing.T) {
 			metricsServer,
 			newReflector,
 			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
-			ReflectorArgs{
+			&ReflectorArgs{
 				CmdVersion: &cmdVersion,
 			})
 		assert.Nil(t, startFunc(&cobra.Command{}, []string{}))
@@ -91,7 +91,7 @@ func TestStartReflector(t *testing.T) {
 			metricsServer,
 			newReflector,
 			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
-			ReflectorArgs{
+			&ReflectorArgs{
 				Verbose:       &verbose,
 				Namespace:     &namespace,
 				ReflectCon:    &conn,
@@ -119,7 +119,7 @@ func TestStartReflector(t *testing.T) {
 			metricsServer,
 			newReflector,
 			func(s *string) (kubernetes.Interface, error) { return nil, errors.New("err") },
-			ReflectorArgs{
+			&ReflectorArgs{
 				Verbose:   &verbose,
 				Namespace: &namespace,
 			})
@@ -150,7 +150,7 @@ func TestStartReflector(t *testing.T) {
 			metricsServer,
 			newReflector,
 			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
-			ReflectorArgs{
+			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
 				MetricsAddr:   &addr,
@@ -187,7 +187,7 @@ func TestStartReflector(t *testing.T) {
 			metricsServer,
 			newReflector,
 			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
-			ReflectorArgs{
+			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
 				MetricsAddr:   &addr,
@@ -228,7 +228,7 @@ func TestStartReflector(t *testing.T) {
 			metricsServer,
 			newReflector,
 			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
-			ReflectorArgs{
+			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
 				MetricsAddr:   &addr,
@@ -270,7 +270,7 @@ func TestStartReflector(t *testing.T) {
 				return r, errors.New("can't start")
 			},
 			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
-			ReflectorArgs{
+			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
 				MetricsAddr:   &addr,

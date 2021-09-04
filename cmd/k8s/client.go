@@ -17,7 +17,7 @@ func CreateK8sClient(
 ) (kubernetes.Interface, error) {
 	var err error
 	var config *rest.Config
-	if kubeconfig == nil {
+	if kubeconfig == nil || *kubeconfig == "" {
 		// creates the in-cluster config
 		config, err = rest.InClusterConfig()
 		if err != nil {
