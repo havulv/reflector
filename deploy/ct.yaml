@@ -1,8 +1,8 @@
 helm-extra-args: --timeout 60s --set image.registry="localhost:5000" --set image.tag="latest" --debug
 debug: true
 chart-dirs:
-- chart
+- deploy/chart
 charts:
-- chart
+- deploy/chart
 # turn this off for now, as we don't have a remote repo yet
 validate-maintainers: false

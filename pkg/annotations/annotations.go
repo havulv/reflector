@@ -28,7 +28,7 @@ const (
 	ReflectionHashAnnotation = Prefix + "/hash"
 	// ReflectionOwnerAnnotation denotes that the reflected secret is owned by the reflector
 	// and can be created or deleted at will or that it is owned by some other entity
-	ReflectionOwnerAnnotation = Prefix + "owner"
+	ReflectionOwnerAnnotation = Prefix + "/owner"
 	// ReflectionOwned is the key to determine if a secret is owned by any reflector
 	ReflectionOwned = "reflector"
 )

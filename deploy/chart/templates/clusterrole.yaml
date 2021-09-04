@@ -10,17 +10,18 @@ metadata:
     app.kubernetes.io/component: "reflector"
     {{- include "labels" . | nindent 4 }}
 rules:
-  - apiGroups: [""]
+  - apiGroups: ["*"]
     resources: ["secrets"]
     verbs: 
     - "get"
     - "watch"
     - "update"
     - "list"
+    - "create"
 {{- if .Values.cascadeDelete }}
     - "delete"
 {{- end }}
-  - apiGroups: [""]
+  - apiGroups: ["*"]
     resources: ["namespaces"]
     verbs: ["watch", "list"]
 ---

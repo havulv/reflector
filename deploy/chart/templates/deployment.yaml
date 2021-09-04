@@ -58,7 +58,8 @@ spec:
           image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{.digest}}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          args:
+          command:
+          - /reflector
         {{- if .Values.verbose }}
           - --verbose
         {{- end }}
@@ -74,7 +75,9 @@ spec:
         {{- end }}
         {{- end }}
         {{- if (and .Values.metrics.host .Values.metrics.port) }}
-          - --metrics-addr={{ printf "%s:%d" .Values.metrics.host .Values.metrics.port | quote }}
+          - --metrics-addr={{ printf "%s:%d" .Values.metrics.host .Values.metrics.port }}
+        {{- else }}
+          - --metrics-addr=0.0.0.0:8080
         {{- end }}
         {{- if .Values.cascadeDelete }}
           - --cascade-delete
@@ -90,13 +93,13 @@ spec:
             initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.liveness.periodSeconds }}
             httpGet:
-              path: /healthz
+              path: healthz
               port: metrics
           readinessProbe:
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.readiness.periodSeconds }}
             httpGet:
-              path: /ready
+              path: ready
               port: metrics
           env:
           - name: POD_NAMESPACE

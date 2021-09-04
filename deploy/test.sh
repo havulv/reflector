@@ -14,35 +14,45 @@ readonly KIND_VERSION=v0.11.1
 readonly CLUSTER_NAME=reflector-e2e
 
 WORKING_DIR=${PWD}
-CLEANUP_CLUSTER=true
+CLEANUP=false
 
 if [[ "$(basename "$WORKING_DIR")" == "deploy" ]]; then
   echo "Please run this from the root of the repo"
   exit 1
 fi
 
+
 if [ $# -gt 0 ]; then
-  if [[ "$1" = "--dont-cleanup-cluster" ]]; then
-    CLEANUP_CLUSTER=false
+  cleanup_arg=$1
+  shift 1
+  if [[ "${cleanup_arg}" = "--cleanup" ]]; then
+    if [ $# -gt 0 ]; then
+      CLEANUP=$1
+      shift 1
+    else
+      CLEANUP=true
+    fi
   fi
 fi
 
 run_ct_container() {
-  echo 'Running ct container...'
-  docker run --rm --interactive --detach --network host --name ct \
-    --volume "${HOME}/.kube/config:/root/.kube/config" \
-    --volume "$(pwd):/workdir" \
-    --workdir /workdir \
-    "quay.io/helmpack/chart-testing:$CT_VERSION" \
-    cat
-  echo
+  if ! docker ps | grep "chart-testing"; then 
+    echo 'Running ct container...'
+    docker run --rm --interactive --detach --network host --name ct \
+      --volume "${HOME}/.kube/config:/root/.kube/config" \
+      --volume "$(pwd):/workdir" \
+      --workdir /workdir \
+      "quay.io/helmpack/chart-testing:$CT_VERSION" \
+      cat
+    echo
+  fi
 }
 
 cleanup() {
-  echo 'Killing ct container...'
-  docker kill ct > /dev/null 2>&1
-  echo 'Done!'
-  if [[ "${CLEANUP_CLUSTER}" == "true" ]]; then
+  if [[ "${CLEANUP}" == "true" ]]; then
+    echo 'Killing ct container...'
+    docker kill ct > /dev/null 2>&1
+    echo 'Done!'
     echo "Deleting cluster..."
     kind delete cluster --name $CLUSTER_NAME
     echo "Done!"

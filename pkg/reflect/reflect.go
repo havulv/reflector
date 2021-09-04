@@ -180,6 +180,10 @@ func createNewSecret(
 	delete(toReflect.Annotations, annotations.ReflectAnnotation)
 	delete(toReflect.Annotations, annotations.NamespaceAnnotation)
 
+	// we can't set resource version on objects to be created
+	toReflect.ObjectMeta.ResourceVersion = ""
+	toReflect.ObjectMeta.UID = ""
+
 	toReflect.Annotations[annotations.ReflectedFromAnnotation] = secret.Namespace
 	toReflect.Annotations[annotations.ReflectedAtAnnotation] = fmt.Sprintf("%d", time.Now().UTC().UnixNano())
 	toReflect.Annotations[annotations.ReflectionHashAnnotation] = hash

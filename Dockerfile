@@ -4,15 +4,18 @@ ARG COMMIT_HASH
 ARG SEMVER
 ARG COMMIT_DATE
 
-# Add the project
+# Add the project module dependencies
 ADD ./go.mod /go/src/github.com/havulv/reflector/
 ADD ./go.sum /go/src/github.com/havulv/reflector/
-ADD ./cmd/ /go/src/github.com/havulv/reflector/cmd/
-ADD ./pkg/ /go/src/github.com/havulv/reflector/pkg/
 
 RUN set -ex &&  \
   cd /go/src/github.com/havulv/reflector && \
   go mod download
+
+# Add the project afterwards to avoid non dependencies blowing
+# up the docker cache
+ADD ./cmd/ /go/src/github.com/havulv/reflector/cmd/
+ADD ./pkg/ /go/src/github.com/havulv/reflector/pkg/
 
 RUN set -ex &&  \
   cd /go/src/github.com/havulv/reflector && \
