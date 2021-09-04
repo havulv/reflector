@@ -1,3 +1,7 @@
 helm-extra-args: --timeout 60s
-chart-dirs: chart
-all: true
+chart-dirs:
+- chart
+charts:
+- chart
+# turn this off for now, as we don't have a remote repo yet
+validate-maintainers: false

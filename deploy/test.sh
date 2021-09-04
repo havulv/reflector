@@ -49,8 +49,7 @@ create_kind_cluster() {
 }
 
 install_charts() {
-  docker_exec ls
-  docker_exec bash -c "cd deploy && ct lint-and-install"
+  docker_exec bash -c "cd deploy && ct lint-and-install --debug"
   echo
 }
 

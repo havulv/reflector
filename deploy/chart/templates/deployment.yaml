@@ -87,17 +87,17 @@ spec:
             protocol: TCP
             name: metrics
           livenessProbe:
+            initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.liveness.periodSeconds }}
             httpGet:
               path: /healthz
               port: metrics
-              initialDelaySeconds: {{ .Values.liveness.initialDelaySeconds }}
-              periodSeconds: {{ .Values.liveness.periodSeconds }}
           readinessProbe:
+            initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readiness.periodSeconds }}
             httpGet:
               path: /ready
               port: metrics
-              initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
-              periodSeconds: {{ .Values.readiness.periodSeconds }}
           env:
           - name: POD_NAMESPACE
             valueFrom:

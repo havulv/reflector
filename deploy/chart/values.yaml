@@ -1,4 +1,3 @@
-
 # You can choose to have a multi replica deployment
 # but, at this point, there is no horizontal sharding
 # implemented, so there all pods will do the same work.
@@ -42,8 +41,12 @@ extraEnv: []
 
 # Resources that this deployment will take
 resources:
-  cpu: 10m
-  memory: 32Mi
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
 
 # Node selector for placing pods onto nodes selectively
 nodeSeelector: {}
