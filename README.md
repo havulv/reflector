@@ -1,5 +1,8 @@
 [![Actions Status](https://github.com/havulv/reflector/workflows/CI/badge.svg)](https://github.com/havulv/reflector/actions)
 [![codecov](https://codecov.io/gh/havulv/reflector/branch/root/graph/badge.svg?token=D50MQ0Q0ME)](https://codecov.io/gh/havulv/reflector)
+[![Go Report Card](https://goreportcard.com/badge/github.com/havulv/reflector)](https://goreportcard.com/report/github.com/havulv/reflector)
+[![GitHub license](https://img.shields.io/github/license/havulv/reflector.svg)](https://github.com/havulv/reflector/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/havulv/reflector.svg)](https://github.com/havulv/reflector/stargazers)
 # [Kubernetes Secret] Reflector
 
 `Reflector` is a kubernetes secrets reflector: taking secrets
