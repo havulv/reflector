@@ -19,6 +19,12 @@ import (
 	"github.com/havulv/reflector/pkg/server"
 )
 
+const (
+	defaultRetries            = 5
+	defaultWorkerConcurrency  = 10
+	defaultReflectConcurrency = 1
+)
+
 // ReflectorArgs is a struct of the arguments to the reflector
 // command.
 type ReflectorArgs struct {
@@ -148,7 +154,7 @@ to others.  `, " "),
 		"namespace", "n", "",
 		`The namespace to sync secrets from`)
 	args.Retries = cmd.Flags().IntP(
-		"retries", "r", 5,
+		"retries", "r", defaultRetries,
 		`The number of times to retry reflecting a
 secret on error`)
 	args.Metrics = cmd.Flags().BoolP(
@@ -158,11 +164,11 @@ secret on error`)
 		"metrics-addr", "localhost:8080",
 		`The address to expose metrics on`)
 	args.WorkerCon = cmd.Flags().Int(
-		"worker-concurrency", 10,
+		"worker-concurrency", defaultWorkerConcurrency,
 		`The number of workers who can pick work of
 the work queue concurrently`)
 	args.ReflectCon = cmd.Flags().Int(
-		"reflect-concurrency", 1,
+		"reflect-concurrency", defaultReflectConcurrency,
 		`The number of reflections that can happen
 concurrently to different namespaces.`)
 	args.CascadeDelete = cmd.Flags().Bool(
