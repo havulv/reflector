@@ -10,12 +10,10 @@ import (
 
 func TestDumpVersion(t *testing.T) {
 	t.Run("errors if version not linked", func(t *testing.T) {
-		t.Parallel()
 		assert.NotNil(t, DumpVersion())
 	})
 
 	t.Run("dumps the version out", func(t *testing.T) {
-		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 
 		CommitHash = "thing"

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -13,7 +14,6 @@ import (
 func TestMissed(t *testing.T) {
 	// assert that it will run
 	t.Run("tests that missed will dump missed messages", func(t *testing.T) {
-		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		outputFunc = func(f string, a ...interface{}) (int, error) {
 			return fmt.Fprintf(buf, f, a...)
@@ -24,6 +24,16 @@ func TestMissed(t *testing.T) {
 
 		missed(20)
 		assert.Equal(t, "Logger Dropped 20 messages", buf.String())
+	})
+
+	t.Run("erroring output func runs through branch", func(t *testing.T) {
+		outputFunc = func(f string, a ...interface{}) (int, error) {
+			return 0, errors.New("some error")
+		}
+		defer func() {
+			outputFunc = fmt.Printf
+		}()
+		missed(20)
 	})
 }
 

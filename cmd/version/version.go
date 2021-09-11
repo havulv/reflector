@@ -30,8 +30,5 @@ Version: %s
 Commit: %s
 Date: %s
 `, SemVer, CommitHash, CommitDate)
-	if err != nil {
-		// TODO: do something?
-	}
-	return nil
+	return err
 }
