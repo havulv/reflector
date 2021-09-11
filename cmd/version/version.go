@@ -25,10 +25,13 @@ func DumpVersion() error {
 		return errors.New(
 			"version information not linked at compile time")
 	}
-	OutputFunc(`
+	_, err := OutputFunc(`
 Version: %s
 Commit: %s
 Date: %s
 `, SemVer, CommitHash, CommitDate)
+	if err != nil {
+		// TODO: do something?
+	}
 	return nil
 }

@@ -14,7 +14,10 @@ import (
 var outputFunc = fmt.Printf
 
 func missed(dropped int) {
-	outputFunc("Logger Dropped %d messages", dropped)
+	_, err := outputFunc("Logger Dropped %d messages", dropped)
+	if err != nil {
+		// TODO: do something?
+	}
 }
 
 func setLogLevel(logger zerolog.Logger, verbose bool) zerolog.Logger {
