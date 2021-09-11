@@ -21,7 +21,7 @@ import (
 func reflectToNamespaces(
 	ctx context.Context,
 	logger zerolog.Logger,
-	client corev1.CoreV1Interface,
+	client corev1.SecretsGetter,
 	sec *v1.Secret,
 	namespaces []string,
 	concurrency int,
@@ -37,7 +37,7 @@ func reflectToNamespaces(
 	defer func() {
 		reflectorReflectionLatency.
 			WithLabelValues(sec.Name).
-			Observe(start.Sub(time.Now()).Seconds())
+			Observe(time.Until(start).Seconds())
 	}()
 
 	// remove the reflection annotations so we don't get recursive reflection somewhere
@@ -65,7 +65,7 @@ func reflectToNamespaces(
 func reflectLambda(
 	ctx context.Context,
 	logger zerolog.Logger,
-	client corev1.CoreV1Interface,
+	client corev1.SecretsGetter,
 	sec *v1.Secret,
 	hash string,
 ) func(wg *sync.WaitGroup, ns string, errChan chan error) {
@@ -80,7 +80,7 @@ func reflectSecret(
 	ctx context.Context,
 	logger zerolog.Logger,
 	wg *sync.WaitGroup,
-	client corev1.CoreV1Interface,
+	client corev1.SecretsGetter,
 	sec *v1.Secret,
 	hash string,
 	ns string,
@@ -118,7 +118,7 @@ func instrumentedReflect(
 	defer func() {
 		reflectorSecretLatency.
 			WithLabelValues(og.Name, og.Namespace).
-			Observe(start.Sub(time.Now()).Seconds())
+			Observe(time.Until(start).Seconds())
 	}()
 	return reflect(ctx, logger, client, og, hash, namespace)
 }
@@ -184,7 +184,6 @@ func createNewSecret(
 	hash string,
 	namespace string,
 ) *v1.Secret {
-
 	// DeepCopy and fix the annotations
 	toReflect := secret.DeepCopy()
 	toReflect.Namespace = namespace

@@ -1,3 +1,5 @@
+// Package server implements a health, readiness, and metrics
+// server for the reflector.
 package server
 
 import (
@@ -35,7 +37,6 @@ func healthcheck(healthInt *int32) func(w http.ResponseWriter, req *http.Request
 			return
 		}
 		w.WriteHeader(http.StatusServiceUnavailable)
-		return
 	}
 }
 
@@ -71,8 +72,11 @@ func (s *server) Run(ctx context.Context) error {
 		serve(s, s.logger, cancel)
 	}()
 	atomic.StoreInt32(&(s.ready), 1)
+
+	<-serverCtx.Done()
+	s.logger.Error().Err(serverCtx.Err()).Msg("Context finished, shutting down")
 	return shutdown(
-		serverCtx, s, s.logger, &wg)
+		ctx, s, s.logger, &wg)
 }
 
 func serve(s *server, logger zerolog.Logger, cancel func()) {
@@ -96,11 +100,14 @@ func shutdown(
 	logger zerolog.Logger,
 	wg *sync.WaitGroup,
 ) error {
-	select {
-	case <-ctx.Done():
-		logger.Error().Err(ctx.Err()).Msg("Context finished, shutting down")
-	}
+	// we are no longer ready if we are shutting down
+	atomic.StoreInt32(&(s.alive), 0)
+	atomic.StoreInt32(&(s.ready), 0)
+
+	// block on context shutdown
 	err := s.Shutdown(ctx)
+
+	logger.Info().Msg("Waiting on goroutines to finish after running server shutdown...")
 	wg.Wait()
 
 	// we closed the server or the original context was canceled so we don't care

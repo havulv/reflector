@@ -1,3 +1,9 @@
+// Package annotations holds the logic for examining
+// and extracting information from annotations.
+// This includes functionality such as:
+//   * Namespace parsing and fetching
+//   * Ownerhship considerations
+//   * And the general constant strings for annotations
 package annotations
 
 import (
@@ -40,10 +46,7 @@ var (
 
 // CanOperate checks if an operation can be performed on an existing secret
 func CanOperate(annotations map[string]string) bool {
-	if annotations[ReflectionOwnerAnnotation] == ReflectionOwned {
-		return true
-	}
-	return false
+	return annotations[ReflectionOwnerAnnotation] == ReflectionOwned
 }
 
 // ParseOrFetchNamespaces parses the namespaces of a secret from the specified
@@ -51,7 +54,7 @@ func CanOperate(annotations map[string]string) bool {
 // field of the annotation) or the specified namespaces. An empty annotation yields no namespaces.
 func ParseOrFetchNamespaces(
 	ctx context.Context,
-	client corev1.CoreV1Interface,
+	client corev1.NamespacesGetter,
 	objAnnotations map[string]string,
 ) ([]string, error) {
 	// parse the annotations

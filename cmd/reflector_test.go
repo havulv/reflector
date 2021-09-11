@@ -21,6 +21,9 @@ import (
 	"github.com/havulv/reflector/pkg/server"
 )
 
+const defaultNamespace = "default"
+const defaultAddr = "localhost:8080"
+
 func createMocks(
 	metricsArgsAssert func(string),
 	reflectArgsAssert func(int, int, int, bool, string),
@@ -76,7 +79,7 @@ func TestStartReflector(t *testing.T) {
 		logger := zerolog.New(buf)
 		t.Parallel()
 		verbose := false
-		namespace := "default"
+		namespace := defaultNamespace
 		conn := 0
 		require.Nil(t, os.Setenv("POD_NAMESPACE", "kube-system"))
 
@@ -100,7 +103,7 @@ func TestStartReflector(t *testing.T) {
 				CascadeDelete: &verbose,
 			})
 		cmd := &cobra.Command{}
-		cmd.Execute()
+		assert.Nil(t, cmd.Execute())
 		assert.Nil(t, startFunc(cmd, []string{}))
 	})
 
@@ -109,7 +112,7 @@ func TestStartReflector(t *testing.T) {
 		logger := zerolog.New(buf)
 		t.Parallel()
 		verbose := false
-		namespace := "default"
+		namespace := defaultNamespace
 
 		_, _, metricsServer, newReflector := createMocks(
 			func(s string) {}, func(a int, b int, c int, d bool, n string) {})
@@ -124,7 +127,7 @@ func TestStartReflector(t *testing.T) {
 				Namespace: &namespace,
 			})
 		cmd := &cobra.Command{}
-		cmd.Execute()
+		assert.Nil(t, cmd.Execute())
 		assert.NotNil(t, startFunc(cmd, []string{}))
 	})
 
@@ -132,8 +135,8 @@ func TestStartReflector(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
 		logger := zerolog.New(buf)
 		t.Parallel()
-		ns := "default"
-		addr := "localhost:8080"
+		ns := defaultNamespace
+		addr := defaultAddr
 		metrics := true
 		verbose := false
 		conn := 0
@@ -161,14 +164,14 @@ func TestStartReflector(t *testing.T) {
 				CascadeDelete: &verbose,
 			})
 		cmd := &cobra.Command{}
-		cmd.Execute()
+		assert.Nil(t, cmd.Execute())
 		assert.Nil(t, startFunc(cmd, []string{}))
 	})
 
 	t.Run("tests that metrics errors are logged", func(t *testing.T) {
 		t.Parallel()
-		ns := "default"
-		addr := "localhost:8080"
+		ns := defaultNamespace
+		addr := defaultAddr
 		metrics := true
 		verbose := false
 		conn := 0
@@ -198,7 +201,7 @@ func TestStartReflector(t *testing.T) {
 				CascadeDelete: &verbose,
 			})
 		cmd := &cobra.Command{}
-		cmd.Execute()
+		assert.Nil(t, cmd.Execute())
 		assert.Nil(t, startFunc(cmd, []string{}))
 		assert.Equal(
 			t,
@@ -209,7 +212,7 @@ func TestStartReflector(t *testing.T) {
 	t.Run("tests that reflector errors are caught", func(t *testing.T) {
 		t.Parallel()
 		ns := ""
-		addr := "localhost:8080"
+		addr := defaultAddr
 		metrics := true
 		verbose := false
 		conn := 0
@@ -239,21 +242,20 @@ func TestStartReflector(t *testing.T) {
 				CascadeDelete: &verbose,
 			})
 		cmd := &cobra.Command{}
-		cmd.Execute()
+		assert.Nil(t, cmd.Execute())
 		assert.Nil(t, startFunc(cmd, []string{}))
 		assert.Equal(
 			t,
 			"{\"level\":\"error\",\"error\":\"some error\",\"component\":\"reflector\",\"message\":\"Error while running reflector\"}\n",
 			altBuf.String())
-
 	})
 
 	t.Run("tests that starting reflector errors are caught", func(t *testing.T) {
 		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		logger := zerolog.New(buf)
-		ns := "default"
-		addr := "localhost:8080"
+		ns := defaultNamespace
+		addr := defaultAddr
 		metrics := true
 		verbose := false
 		conn := 0
@@ -281,7 +283,7 @@ func TestStartReflector(t *testing.T) {
 				CascadeDelete: &verbose,
 			})
 		cmd := &cobra.Command{}
-		cmd.Execute()
+		assert.Nil(t, cmd.Execute())
 		assert.NotNil(t, startFunc(cmd, []string{}))
 	})
 }

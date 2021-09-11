@@ -69,7 +69,6 @@ func TestReflectToNamespaces(t *testing.T) {
 				return
 			}
 			assert.NotNil(t, err)
-
 		})
 	}
 }
@@ -108,7 +107,6 @@ func TestReflectLambda(t *testing.T) {
 		t.Log("no error received after goroutine completion")
 		t.Fail()
 	}
-
 }
 
 func TestReflectSecret(t *testing.T) {
@@ -146,7 +144,6 @@ func TestReflectSecret(t *testing.T) {
 		t.Log("no error received after goroutine completion")
 		t.Fail()
 	}
-
 }
 
 func TestInstrumentedReflect(t *testing.T) {
@@ -259,6 +256,7 @@ func TestReflect(t *testing.T) {
 			assert.Nil(t, err)
 			sec, err := client.CoreV1().Secrets("new-ns").Get(
 				ctx, test.secret.Name, metav1.GetOptions{})
+			assert.Nil(t, err)
 			assert.NotNil(t, sec)
 		})
 	}

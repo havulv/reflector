@@ -195,7 +195,7 @@ func TestDeleteSecret(t *testing.T) {
 					t.Fail()
 					return
 				}
-				t.Log("test succeded!")
+				t.Log("test succeeded!")
 			}
 		})
 	}
@@ -302,15 +302,15 @@ func TestFindExistingSecretNamespaces(t *testing.T) {
 
 			client := fake.NewSimpleClientset()
 			if len(test.retSecrets) > 0 {
-				t := client.Tracker()
+				tr := client.Tracker()
 				for _, s := range test.retSecrets {
-					t.Add(s)
+					assert.Nil(t, tr.Add(s))
 				}
 			}
 
 			if test.retNamespaces != nil {
-				t := client.Tracker()
-				t.Add(test.retNamespaces)
+				tr := client.Tracker()
+				assert.Nil(t, tr.Add(test.retNamespaces))
 			}
 
 			if test.listErr != nil {

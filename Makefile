@@ -18,7 +18,7 @@ help:
 	@grep -oR "^\(.*:\|\)\s*#help: .*$$" Makefile | sed -e 's/\(.*\):\s*#help:\(.*\)/make \1 \n\2\n/'
 
 lint: #help: Runs golangci-lint on the entire project.
-	@golangci-lint run --sort-results
+	@golangci-lint run --sort-results --config ./.golangci.yaml
 
 clean: #help: Cleans out all temporary files created from test runs
 	@rm ./test/coverage.out 2> /dev/null || exit 0

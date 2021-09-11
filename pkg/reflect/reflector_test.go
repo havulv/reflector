@@ -130,7 +130,6 @@ func TestNext(t *testing.T) {
 			assert.True(t, r.next())
 		})
 	}
-
 }
 
 func TestProcess(t *testing.T) {
@@ -300,7 +299,6 @@ func TestProcess(t *testing.T) {
 			t.Log(buf.String())
 		})
 	}
-
 }
 
 func TestHandleErr(t *testing.T) {
@@ -356,7 +354,6 @@ func TestHandleErr(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestStart(t *testing.T) {
@@ -459,7 +456,6 @@ func TestStart(t *testing.T) {
 			assert.Nil(t, err)
 		})
 	}
-
 }
 
 func TestWorker(t *testing.T) {

@@ -16,7 +16,8 @@ var outputFunc = fmt.Printf
 func missed(dropped int) {
 	_, err := outputFunc("Logger Dropped %d messages", dropped)
 	if err != nil {
-		// TODO: do something?
+		log.Error().Err(err).Int("dropped", dropped).Msg(
+			"Unable to output dropped logs, defaulting to global logger")
 	}
 }
 

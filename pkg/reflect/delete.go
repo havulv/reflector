@@ -16,7 +16,7 @@ import (
 func cascadeDelete(
 	ctx context.Context,
 	logger zerolog.Logger,
-	client corev1.CoreV1Interface,
+	client corev1.SecretsGetter,
 	secret string,
 	namespaces []string,
 	concurrency int,
@@ -36,7 +36,7 @@ func cascadeDelete(
 func deleteLambda(
 	ctx context.Context,
 	logger zerolog.Logger,
-	client corev1.CoreV1Interface,
+	client corev1.SecretsGetter,
 	secret string,
 ) func(wg *sync.WaitGroup, ns string, errChan chan error) {
 	return func(wg *sync.WaitGroup, ns string, errChan chan error) {
@@ -52,7 +52,7 @@ func deleteSecret(
 	ctx context.Context,
 	logger zerolog.Logger,
 	wg *sync.WaitGroup,
-	client corev1.CoreV1Interface,
+	client corev1.SecretsGetter,
 	secret string,
 	ns string,
 	errChan chan error,

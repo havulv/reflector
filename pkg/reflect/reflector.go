@@ -1,3 +1,10 @@
+// Package reflect contains the business logic for reflecting
+// secrets between namespaces. Importantly, it tackles
+// implementing the functions that will work on the workqueue
+// that is constructed.
+//
+// Each worker will read from the queue and start in on its
+// reflection to each namespace in due time.
 package reflect
 
 import (

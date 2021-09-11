@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -39,6 +40,8 @@ func TestHealthcheck(t *testing.T) {
 			w := httptest.NewRecorder()
 			f(w, nil)
 			res := w.Result()
+			err := res.Body.Close()
+			assert.Nil(t, err)
 			assert.Equal(t, test.statusCode, res.StatusCode)
 		})
 	}
@@ -75,6 +78,7 @@ func TestRun(t *testing.T) {
 		assert.Equal(
 			t,
 			`{"level":"error","error":"context canceled","message":"Context finished, shutting down"}
+{"level":"info","message":"Waiting on goroutines to finish after running server shutdown..."}
 {"level":"info","address":"localhost:8085","message":"Started server"}
 {"level":"info","message":"Server shut down"}
 `, buf.String())
@@ -95,7 +99,11 @@ func TestServe(t *testing.T) {
 		}
 		go func() {
 			time.Sleep(time.Millisecond)
-			s.Shutdown(ctx)
+			err := s.Shutdown(ctx)
+			if errors.Is(err, http.ErrServerClosed) || errors.Is(err, context.Canceled) {
+				return
+			}
+			assert.Nil(t, err)
 		}()
 		serve(s, l, cancel)
 		assert.Equal(
@@ -116,9 +124,13 @@ func TestShutdown(t *testing.T) {
 		// cancel early so we just auto shutdown
 		cancel()
 
-		s := &server{}
+		s := &server{
+			ready: 1,
+			alive: 1,
+		}
 		wg := &sync.WaitGroup{}
 		assert.Nil(t, shutdown(ctx, s, l, wg))
-		assert.Equal(t, "{\"level\":\"error\",\"error\":\"context canceled\",\"message\":\"Context finished, shutting down\"}\n", buf.String())
+		assert.Equal(t, int32(0), s.alive)
+		assert.Equal(t, int32(0), s.ready)
 	})
 }

@@ -100,6 +100,16 @@ func TestParseOrFetchNamespaces(t *testing.T) {
 			nil,
 			errors.New("some err"),
 		},
+		{
+			"deduplicates namespaces",
+			map[string]string{
+				NamespaceAnnotation: "default,monitoring,logging,default,logging",
+			},
+			[]string{"default", "monitoring", "logging"},
+			[]string{},
+			nil,
+			nil,
+		},
 	}
 	for _, l := range tests {
 		test := l

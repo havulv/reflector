@@ -1,6 +1,9 @@
 package reflect
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+)
 
 // Namespace is the namespace for metrics produced by the reflector.
 const Namespace = "reflector"
@@ -42,10 +45,11 @@ var (
 	)
 )
 
+// nolint:gochecknoinits // registering metrics on init is standard best practice
 func init() {
 	prometheus.MustRegister(reflectorReflections)
 	prometheus.MustRegister(reflectorReflectionLatency)
 	prometheus.MustRegister(reflectorSecretLatency)
 	// Add Go module build info.
-	prometheus.MustRegister(prometheus.NewBuildInfoCollector())
+	prometheus.MustRegister(collectors.NewBuildInfoCollector())
 }
