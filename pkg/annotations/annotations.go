@@ -81,11 +81,18 @@ func parseNamespaces(str string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	// split and trim spaces
+	// split and trim spaces, and dedupe
+	namespaces := []string{}
+	namespaceSet := map[string]struct{}{}
 	split := strings.Split(str, ",")
-	for i, s := range split {
-		split[i] = strings.Trim(s, " ")
+	for _, ns := range split {
+		trimmed := strings.Trim(ns, " ")
+		if _, ok := namespaceSet[trimmed]; ok {
+			continue
+		}
+		namespaceSet[trimmed] = struct{}{}
+		namespaces = append(namespaces, trimmed)
 	}
 
-	return split, nil
+	return namespaces, nil
 }

@@ -44,8 +44,8 @@ spec:
       annotations:
       {{- end }}
         prometheus.io/path: "/metrics"
-        prometheus.io/scrape: 'true'
-        prometheus.io/port: '8080'
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
       {{- end }}
     spec:
       serviceAccountName: {{ template "reflector.serviceAccountName" . }}
@@ -55,7 +55,8 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.image }}
-          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}} @{{.digest}}{{- else -}}:{{ default $.Chart.AppVersion .tag }} {{- end -}}"
+          image: "{{- if .registry -}}{{ .registry }}/{{- end -}}{{ .repository }}{{- if (.digest) -}}@{{.digest}}{{- else -}}:{{ default $.Chart.AppVersion .tag }}{{- end -}}"
+          # If it is 40 then it is definitely the image line
           {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:

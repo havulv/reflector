@@ -40,13 +40,26 @@ func reflectToNamespaces(
 			Observe(start.Sub(time.Now()).Seconds())
 	}()
 
-	// hash the og -- TODO is crc64 good enough here?
-	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(sec.String())))
+	// remove the reflection annotations so we don't get recursive reflection somewhere
+	// we do this quite early, because we:
+	// * Already parsed out the namespaces
+	// * Do read only ops // copies from here on out, that don't need these annotations
+	// * Don't want to generate updates for secrets in existing namespaces when only
+	//   the namespace annotation changes
 
+	// We don't do it earlier because we want to avoid mutating this secret outside of
+	// the context of reflection. We don't do a deep copy because we don't need to
+	// needlessly waste memory.
+	delete(sec.Annotations, annotations.ReflectAnnotation)
+	delete(sec.Annotations, annotations.NamespaceAnnotation)
+
+	// hash the og -- TODO is crc64 good enough here?
 	return batchOverNamespaces(
 		concurrency,
 		namespaces,
-		reflectLambda(ctx, logger, client, sec, hash))
+		reflectLambda(
+			ctx, logger, client, sec,
+			fmt.Sprintf("%x", sha256.Sum256([]byte(sec.String())))))
 }
 
 func reflectLambda(
@@ -175,10 +188,6 @@ func createNewSecret(
 	// DeepCopy and fix the annotations
 	toReflect := secret.DeepCopy()
 	toReflect.Namespace = namespace
-
-	// remove the reflection annotations so we don't get recursive reflection somewhere
-	delete(toReflect.Annotations, annotations.ReflectAnnotation)
-	delete(toReflect.Annotations, annotations.NamespaceAnnotation)
 
 	// we can't set resource version on objects to be created
 	toReflect.ObjectMeta.ResourceVersion = ""

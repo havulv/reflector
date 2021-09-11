@@ -4,6 +4,7 @@ FLAGS :=
 .SILENT: lint
 .PHONY: lint test test/verbose test/serialized
 
+CLEANUP=true
 TEST_GO_FILES := go test $$(go list ./...)
 TEST_COMMAND := $(TEST_GO_FILES) -p 1 -cover -coverprofile=test/coverage.out -timeout $(TIMEOUT) $(FLAGS)
 JUNIT_OUTPUT := tee ./test/raw.txt && cat ./test/raw.txt | go-junit-report -set-exit-code > ./test/report.xml
@@ -64,6 +65,13 @@ test/verbose/race: #help: Runs all tests with verbose output and -race enabled.
 
 test/serialized: #help: Runs all tests and generates JSON output.
 	@$(MAKE) -s FLAGS="-json" test
+
+test/e2e: #help: Runs the end to end tests through KIND
+ifeq (${CLEANUP},true)
+	./test/test-chart.sh --cleanup
+else
+	./test/test-chart.sh
+endif
 
 coverage: #help: Generates a coverage profile from all tests.
 	@mkdir -p test

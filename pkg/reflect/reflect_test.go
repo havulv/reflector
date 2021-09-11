@@ -343,12 +343,9 @@ func TestCreateNewSecret(t *testing.T) {
 			"creates a new secret",
 			&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "x",
-					Namespace: "blergh",
-					Annotations: map[string]string{
-						annotations.ReflectAnnotation:   "true",
-						annotations.NamespaceAnnotation: "blergh2",
-					},
+					Name:        "x",
+					Namespace:   "blergh",
+					Annotations: map[string]string{},
 				},
 			},
 		},
@@ -363,10 +360,6 @@ func TestCreateNewSecret(t *testing.T) {
 			assert.Equal(t, s.Annotations[annotations.ReflectionHashAnnotation], hash)
 			assert.Greater(t, len(s.Annotations[annotations.ReflectedAtAnnotation]), 0)
 			assert.Equal(t, s.Annotations[annotations.ReflectedFromAnnotation], test.og.Namespace)
-			_, ok := s.Annotations[annotations.NamespaceAnnotation]
-			assert.False(t, ok)
-			_, ok2 := s.Annotations[annotations.ReflectAnnotation]
-			assert.False(t, ok2)
 		})
 	}
 }

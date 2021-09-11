@@ -16,7 +16,7 @@ readonly CLUSTER_NAME=reflector-e2e
 WORKING_DIR=${PWD}
 CLEANUP=false
 
-if [[ "$(basename "$WORKING_DIR")" == "deploy" ]]; then
+if [[ "$(basename "$WORKING_DIR")" == "test" ]]; then
   echo "Please run this from the root of the repo"
   exit 1
 fi
@@ -52,10 +52,13 @@ cleanup() {
   if [[ "${CLEANUP}" == "true" ]]; then
     echo 'Killing ct container...'
     docker kill ct > /dev/null 2>&1
-    echo 'Done!'
+    echo 'Chart Testing container Done!'
     echo "Deleting cluster..."
     kind delete cluster --name $CLUSTER_NAME
-    echo "Done!"
+    echo 'Cluster Done!'
+    echo "Killing registry..."
+    docker kill ${REGISTRY_NAME} > /dev/null 2>&1
+    echo "Registry Done!"
   fi
 }
 
@@ -73,7 +76,7 @@ install_kind() {
 create_kind_cluster() {
   hash kind || install_kind
   if ! kind get clusters | grep "${CLUSTER_NAME}"; then
-    kind create cluster --name "$CLUSTER_NAME" --config deploy/kind.yaml --wait 60s
+    kind create cluster --name "$CLUSTER_NAME" --config "./test/kind.yaml" --wait 60s
     running="$(docker inspect -f '{{.State.Running}}' "${REGISTRY_NAME}" 2>/dev/null || true)"
     if [ "${running}" != 'true' ]; then
       docker run \
@@ -110,7 +113,7 @@ build_image() {
 }
 
 install_charts() {
-  docker_exec bash -c "cd deploy && ct lint-and-install --debug"
+  docker_exec bash -c "ct lint-and-install --debug --config ./test/ct.yaml"
   echo
 }
 
