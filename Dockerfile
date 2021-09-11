@@ -1,4 +1,4 @@
-FROM golang:1.16.7 AS builder
+FROM golang:1.17 AS builder
 
 ARG COMMIT_HASH
 ARG SEMVER

@@ -13,30 +13,52 @@ readonly CT_VERSION=v3.4.0
 readonly KIND_VERSION=v0.11.1
 readonly CLUSTER_NAME=reflector-e2e
 
+SCRIPT_NAME=$0
 WORKING_DIR=${PWD}
 CLEANUP=false
+BUILD=false
 
-if [[ "$(basename "$WORKING_DIR")" == "test" ]]; then
+if [ "$(basename "$WORKING_DIR")" == "test" ]; then
   echo "Please run this from the root of the repo"
   exit 1
 fi
 
-
-if [ $# -gt 0 ]; then
-  cleanup_arg=$1
-  shift 1
-  if [[ "${cleanup_arg}" = "--cleanup" ]]; then
-    if [ $# -gt 0 ]; then
-      CLEANUP=$1
-      shift 1
+while [ $# -gt 0 ]; do
+  case $1 in
+  --cleanup*)
+    arg=$(echo "$1" | cut -d "=" -f2)
+    if [ "$arg" == "false" ]; then
+      CLEANUP=false
     else
       CLEANUP=true
     fi
-  fi
-fi
+    ;;
+  "-h" | "--help")
+    echo "Usage: ${SCRIPT_NAME} [--cleanup] [--build]"
+    echo ""
+    echo "--cleanup=(true|false)       Specifies that the script should cleanup all resources"
+    echo "                             created (clusters, images, containers, etc.) instead"
+    echo "                             of leaving them on the machine. Empty argument assumes"
+    echo "                             cleanup is true, as does the default."
+    echo ""
+    echo "--build=(true|false)         Builds the image along with all other resources."
+    echo "                             An empty argument assumes true, and the default is false."
+    exit 1
+    ;;
+  --build*)
+    arg=$(echo "$1" | cut -d "=" -f2)
+    if [ "$arg" != "false" ]; then
+      BUILD=true
+    else
+      BUILD=false
+    fi
+    ;;
+  esac
+  shift
+done
 
 run_ct_container() {
-  if ! docker ps | grep "chart-testing"; then 
+  if ! docker ps | grep "chart-testing"; then
     echo 'Running ct container...'
     docker run --rm --interactive --detach --network host --name ct \
       --volume "${HOME}/.kube/config:/root/.kube/config" \
