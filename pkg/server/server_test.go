@@ -75,13 +75,23 @@ func TestRun(t *testing.T) {
 		}
 		cancel()
 		assert.Nil(t, s.Run(ctx))
-		assert.Equal(
+		logs := buf.String()
+		assert.Contains(
 			t,
-			`{"level":"error","error":"context canceled","message":"Context finished, shutting down"}
-{"level":"info","message":"Waiting on goroutines to finish after running server shutdown..."}
-{"level":"info","address":"localhost:8085","message":"Started server"}
-{"level":"info","message":"Server shut down"}
-`, buf.String())
+			logs,
+			`{"level":"error","error":"context canceled","message":"Context finished, shutting down"}`)
+		assert.Contains(
+			t,
+			logs,
+			`{"level":"info","message":"Waiting on goroutines to finish after running server shutdown..."}`)
+		assert.Contains(
+			t,
+			logs,
+			`{"level":"info","address":"localhost:8085","message":"Started server"}`)
+		assert.Contains(
+			t,
+			logs,
+			`{"level":"info","message":"Server shut down"}`)
 	})
 }
 
