@@ -5,7 +5,7 @@ repo_name: "havulv/reflector"
 repo_url: https://github.com/havulv/reflector
 site_url: https://reflector.havulv.io/
 docs_dir: ../docs
-site_dir: ../docs
+site_dir: ../site
 remote_branch: docs
 
 markdown_extensions:
