@@ -114,7 +114,6 @@ jobs:
       id: image_save
       run: |
         echo "Gzip the tar ball it..."
-        ls -al
         cat reflector.tar | pigz > reflector.tar.gz
 
     - name: Upload image 
@@ -183,9 +182,12 @@ jobs:
 
     - name: Load images from tarball
       run: |
+        echo "Unzipping the tarball..."
+        pigz -dc reflector.tar.gz > reflector.tar
         echo "Loading docker images..."
-        pigz -dc reflector.tar.gz | docker load
-        docker tag havulv/reflector:latest localhost:5000/havulv/reflector:latest
+        docker load reflector.tar
+        echo "Tagging images..."
+        docker tag gcr.io/havulv/reflector:$(git describe --tags --always --dirty) localhost:5000/havulv/reflector:latest
 
     - name: Test
       run: |
