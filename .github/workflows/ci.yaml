@@ -97,13 +97,25 @@ jobs:
     - name: Available platforms
       run: echo ${{ steps.buildx.outputs.platforms }}
 
-    - name: Build & Save image
-      id: image_manipulation
+    - name: Build image
+      id: docker_build
+      uses: docker/build-push-action@v2
+      with:
+        context: ./
+        file: ./Dockerfile
+        builder: ${{ steps.buildx.outputs.name }}
+        push: false
+        outputs: type=tar,dest=reflector.tar
+        tags: havulv/reflector:latest
+        cache-from: type=local,src=/tmp/.buildx-cache
+        cache-to: type=local,dest=/tmp/.buildx-cache
+
+    - name: Save image
+      id: image_save
       run: |
-        make image/current
-        echo "Saving image and gzipping it..."
-        docker image ls
-        docker save gcr.io/havulv/reflector:$(git describe --tags --always --dirty) | pigz > reflector.tar.gz
+        echo "Gzip the tar ball it..."
+        ls -al
+        cat reflector.tar | pigz > reflector.tar.gz
 
     - name: Upload image 
       uses: actions/upload-artifact@v2
