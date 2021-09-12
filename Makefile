@@ -67,6 +67,7 @@ test/verbose/race: #help: Runs all tests with verbose output and -race enabled.
 test/serialized: #help: Runs all tests and generates JSON output.
 	@$(MAKE) -s FLAGS="-json" test
 
+# TODO: add PHONY to the rule when we are ready to start running e2e tests in ci
 test/e2e: #help: Runs the end to end tests through KIND
 	./test/test-chart.sh ${E2E_ARGS}
 
