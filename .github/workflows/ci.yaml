@@ -182,8 +182,12 @@ jobs:
 
     - name: Load images from tarball
       run: |
+        ls -al
+        echo "Unzipping docker images..."
+        pigz -dc reflector.tar.gz > reflector.tar
         echo "Loading docker images..."
-        pigz -dc reflector.tar.gz > reflector.tar | docker load
+        docker load reflector.tar
+        echo "Tagging images..."
         docker tag gcr.io/havulv/reflector:$(git describe --tags --always --dirty) localhost:5000/havulv/reflector:latest
 
     - name: Test
