@@ -6,7 +6,47 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://reflector.havulv.io/annotations/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/cli_options/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/installation/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/usage/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/examples/basic_auth/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/examples/cert_manager/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://reflector.havulv.io/internals/architecture/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/user_guide/</loc>
+         <lastmod>2021-09-12</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://reflector.havulv.io/user_guide/gotchas/</loc>
          <lastmod>2021-09-12</lastmod>
          <changefreq>daily</changefreq>
     </url>

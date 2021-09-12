@@ -9,20 +9,22 @@
       
       
       
-      <link rel="icon" href="/assets/images/favicon.png">
+        <link rel="canonical" href="https://reflector.havulv.io/annotations/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.6">
     
     
       
-        <title>[Kubernetes Secret] Reflector
+        <title>Annotations - [Kubernetes Secret] Reflector
 </title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.802231af.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.802231af.min.css">
       
         
-        <link rel="stylesheet" href="/assets/stylesheets/palette.3f5d1f46.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.3f5d1f46.min.css">
         
       
     
@@ -56,7 +58,7 @@
     <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="">
   
     
-    <script>function __prefix(e){return new URL("/",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
       <script>var palette=__get("__palette");if(null!==palette&&"object"==typeof palette.color)for(var key in palette.color)document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
     
@@ -65,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#annotations" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -72,7 +79,7 @@
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="[Kubernetes Secret] Reflector
+    <a href=".." title="[Kubernetes Secret] Reflector
 " class="md-header__button md-logo" aria-label="[Kubernetes Secret] Reflector
 " data-md-component="logo">
       
@@ -94,7 +101,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Annotations
             
           </span>
         </div>
@@ -194,7 +201,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="[Kubernetes Secret] Reflector
+    <a href=".." title="[Kubernetes Secret] Reflector
 " class="md-nav__button md-logo" aria-label="[Kubernetes Secret] Reflector
 " data-md-component="logo">
       
@@ -229,7 +236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         Reflector
       </a>
     </li>
@@ -242,11 +249,72 @@
 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="/annotations/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Annotations
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Annotations
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reflectorhavulviohash" class="md-nav__link">
+    reflector.havulv.io/hash
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reflectorhavulvioowner" class="md-nav__link">
+    reflector.havulv.io/owner
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#experimental-reflectorhavulvioreflected-at" class="md-nav__link">
+    [EXPERIMENTAL] reflector.havulv.io/reflected-at
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#experimental-reflectorhavulvioreflected-from" class="md-nav__link">
+    [EXPERIMENTAL] reflector.havulv.io/reflected-from
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -259,7 +327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/cli_options/" class="md-nav__link">
+      <a href="../cli_options/" class="md-nav__link">
         Command Line Options
       </a>
     </li>
@@ -274,7 +342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -289,7 +357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/usage/" class="md-nav__link">
+      <a href="../usage/" class="md-nav__link">
         Usage
       </a>
     </li>
@@ -325,7 +393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/basic_auth/" class="md-nav__link">
+      <a href="../examples/basic_auth/" class="md-nav__link">
         Basic Authentication
       </a>
     </li>
@@ -337,7 +405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/cert_manager/" class="md-nav__link">
+      <a href="../examples/cert_manager/" class="md-nav__link">
         Certificate Reflection
       </a>
     </li>
@@ -379,7 +447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/internals/architecture/" class="md-nav__link">
+      <a href="../internals/architecture/" class="md-nav__link">
         Architecture
       </a>
     </li>
@@ -421,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/user_guide/" class="md-nav__link">
+      <a href="../user_guide/" class="md-nav__link">
         Getting Started
       </a>
     </li>
@@ -433,7 +501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/user_guide/gotchas/" class="md-nav__link">
+      <a href="../user_guide/gotchas/" class="md-nav__link">
         Gotchas
       </a>
     </li>
@@ -453,11 +521,146 @@
               </div>
             
             
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#reflectorhavulviohash" class="md-nav__link">
+    reflector.havulv.io/hash
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reflectorhavulvioowner" class="md-nav__link">
+    reflector.havulv.io/owner
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#experimental-reflectorhavulvioreflected-at" class="md-nav__link">
+    [EXPERIMENTAL] reflector.havulv.io/reflected-at
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#experimental-reflectorhavulvioreflected-from" class="md-nav__link">
+    [EXPERIMENTAL] reflector.havulv.io/reflected-from
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           <div class="md-content" data-md-component="content">
             <article class="md-content__inner md-typeset">
               
-  <h1>404 - Not found</h1>
+                
+                  <a href="https://github.com/havulv/reflector/edit/master/docs/annotations.md" title="Edit this page" class="md-content__button md-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+                  </a>
+                
+                
+                <h1 id="annotations">Annotations<a class="headerlink" href="#annotations" title="Permanent link"> ¶</a></h1>
+<div class="highlight"><pre><span></span><code><span class="nt">reflector.havulv.io/reflect</span><span class="p">:</span> <span class="s">&quot;true&quot;</span>
+<span class="nt">reflector.havulv.io/namespaces</span><span class="p">:</span> <span class="s">&quot;some,namespace,to,reflect,to&quot;</span>
+</code></pre></div>
+<p>The first annotation (<code>reflector.havulv.io/reflect: "true"</code>) indicates
+that this secret should be reflected. If, at any point in the secret's
+lifecycle, you wish to stop reflecting this secret, then remove the
+annotation from the object. Note that the reflected secrets will not be
+removed or updated if you remove this annotation from the originating
+secret.</p>
+<p>The second annotation (
+<code>reflector.havulv.io/namespaces:"some,namespace,to,reflect,to"</code>)
+indicates the namespaces that the secret should be reflected to. The
+annotation's value is a comma separated list of the namespaces that
+should be reflected to. If you supply an asterisk <code>*</code> as the value,
+then the reflector will reflect the secret to every namespace that it
+can.</p>
+<p>One potential <em>gotcha</em> related to this annotation, is the fact that,
+when namespaces are updated, secrets will not be removed from
+namespaces they are already reflected to.</p>
+<p>For example, if the namespace annotation starts as
+<code>kube-system,monitoring,logging</code> and then it is updated to
+<code>kube-system,monitoring</code>, the secret in <code>logging</code> will not be removed.
+Additionally, the <code>secret</code> in <code>logging</code> will not be updated when
+changes to the originating secret occur.</p>
+<p>In the generated secret, you can see that the two <code>reflector.havulv.io</code>
+prefixed annotations from the originating secret have been removed and
+replaced with four new ones:</p>
+<h6 id="reflectorhavulviohash"><code>reflector.havulv.io/hash</code><a class="headerlink" href="#reflectorhavulviohash" title="Permanent link"> ¶</a></h6>
+<p>Is a hash of the originating secret, minus the reflection annotations
+(<code>reflector.havulv.io/.*</code>). We use this to reduce the number of
+needless updates to existing secrets when nothing has changed on the
+secret except the reflection meta annotations. In practice, this only
+affects the namespaces annotation: not updating secrets that have
+already been reflected when a namespace is added or removed.</p>
+<p>This is due to the fact that if <code>reflector.havulv.io/reflect</code> is
+changed then the secret will never be reflected, and the hash will
+not be checked.</p>
+<h6 id="reflectorhavulvioowner"><code>reflector.havulv.io/owner</code><a class="headerlink" href="#reflectorhavulvioowner" title="Permanent link"> ¶</a></h6>
+<p>Is the ownership of the reflected secret. If the annotation is set to
+anything other than <code>reflector</code> then the secret will not be updated on
+changes to the originating secret.</p>
+<p>This is useful in the case that a reflected secret needs some manual
+tuning for a specific use case, or if some debugging in that namespace
+needs to occur.</p>
+<h6 id="experimental-reflectorhavulvioreflected-at">[EXPERIMENTAL] <code>reflector.havulv.io/reflected-at</code><a class="headerlink" href="#experimental-reflectorhavulvioreflected-at" title="Permanent link"> ¶</a></h6>
+<p>Is a timestamp in UNIX nanoseconds (UTC timezone) of when the secret
+was first reflected. This is useful almost purely for debugging
+purposes, and for comparing to apiserver audit logs. This annotation
+is experimental, and may be removed at any point in the future. Please
+try not to depend on this annotation.</p>
+<h6 id="experimental-reflectorhavulvioreflected-from">[EXPERIMENTAL] <code>reflector.havulv.io/reflected-from</code><a class="headerlink" href="#experimental-reflectorhavulvioreflected-from" title="Permanent link"> ¶</a></h6>
+<p>Is the namespace that the originating secret exists in. This is useful
+for debugging purposes, but is currently not used by the reflector.
+This annotation is experimental and, in the future, this annotation be
+removed.</p>
+<p>Note that, the reflector makes an assumption that only one secret
+will be globally reflected at one time. That is, there will only be
+one secret named <code>my-secret</code> with the reflection annotations in all
+namespaces at any given time.</p>
+<p>Consider the following example of this assumption: if you have one
+secret named <code>my-secret</code> in the namespace <code>kube-system</code> and another
+secret named <code>my-secret</code> in <code>default</code> and both have the annotation
+<code>reflector.havulv.io/namespaces: "monitoring"</code>, then the resulting
+secret named <code>my-secret</code> in <code>monitoring</code> is undefined.</p>
+<p>The reflection of the secret in <code>default</code> may clobber the secret
+reflected from <code>kube-system</code> or vice-versa, it will depend on the order
+in which they were created or updated, but it is not up to the
+reflector to resolve this conflict.  In the future, there may be
+functionality which will prevent the secrets from colliding and produce
+an error log (this annotation will be helpful, in that case), but this
+has not been implemented yet.</p>
+                
+              
+              
+                
+
 
               
             </article>
@@ -468,6 +671,41 @@
       
         
 <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href=".." class="md-footer__link md-footer__link--prev" aria-label="Previous: Reflector" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Reflector
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../cli_options/" class="md-footer__link md-footer__link--next" aria-label="Next: Command Line Options" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Command Line Options
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
@@ -488,10 +726,10 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "/", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "/assets/javascripts/workers/search.409db549.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.409db549.min.js", "version": null}</script>
     
     
-      <script src="/assets/javascripts/bundle.756773cc.min.js"></script>
+      <script src="../assets/javascripts/bundle.756773cc.min.js"></script>
       
     
   </body>
