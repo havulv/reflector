@@ -30,9 +30,11 @@ jobs:
           - 'go.sum'
           - 'test/e2e/**/*'
           - '.config/.golangci.yaml'
+          - '.github/workflows/ci.yaml'
           charts:
           - 'deploy/chart/Chart.yaml'
           - 'deploy/chart/**/*'
+          - '.github/workflows/ci.yaml'
 
   security:
     name: Security
@@ -111,6 +113,7 @@ jobs:
       id: image_save
       run: |
         echo "Saving image and gzipping it..."
+        docker image ls
         docker save havulv/reflector:latest | pigz > reflector.tar.gz
 
     - name: Upload image 
