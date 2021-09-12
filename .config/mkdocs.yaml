@@ -49,7 +49,6 @@ markdown_extensions:
 theme:
   font:
     text: Work Sans
-  logo: assets/logo.png
   name: material
   palette:
   - scheme: default
