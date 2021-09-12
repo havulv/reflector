@@ -182,11 +182,8 @@ jobs:
 
     - name: Load images from tarball
       run: |
-        echo "Unzipping the tarball..."
-        pigz -dc reflector.tar.gz > reflector.tar
         echo "Loading docker images..."
-        docker load reflector.tar
-        echo "Tagging images..."
+        pigz -dc reflector.tar.gz > reflector.tar | docker load
         docker tag gcr.io/havulv/reflector:$(git describe --tags --always --dirty) localhost:5000/havulv/reflector:latest
 
     - name: Test
@@ -200,6 +197,7 @@ jobs:
     needs:
     - changes
     - build
+    - helm
     steps:
     - uses: geekyeggo/delete-artifact@v1
       with:
