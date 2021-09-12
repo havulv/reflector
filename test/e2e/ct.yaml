@@ -1,6 +1,0 @@
-chart-dirs:
-- deploy/chart
-charts:
-- deploy/chart
-# turn this off for now, as we don't have a remote repo yet
-validate-maintainers: false
