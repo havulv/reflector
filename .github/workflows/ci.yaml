@@ -186,10 +186,10 @@ jobs:
         echo "Unzipping docker images..."
         pigz -dc reflector.tar.gz > reflector.tar
         echo "Loading docker images..."
-        docker load -i reflector.tar
+        docker import reflector.tar localhost:5000/havulv/reflector:latest
         echo "Tagging images..."
         docker image ls
-        docker tag gcr.io/havulv/reflector:$(git describe --tags --always --dirty) localhost:5000/havulv/reflector:latest
+        docker tag localhost:5000/havulv/reflector:latest gcr.io/havulv/reflector:$(git describe --tags --always --dirty)
 
     - name: Test
       run: |
