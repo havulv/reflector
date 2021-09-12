@@ -25,6 +25,7 @@ RUN set -ex &&  \
         -a \
         -o ./reflector \
 		-ldflags "\
+          -w \
           -X $(go list -m)/cmd/version.commitHash=\"$COMMIT_HASH\" \
 		  -X $(go list -m)/cmd/version.semVer=\"$SEMVER\" \
 		  -X '$(go list -m)/cmd/version.commitDate=\"$COMMIT_DATE\"' \

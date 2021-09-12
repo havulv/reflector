@@ -9,7 +9,7 @@ strategy:
   type: RollingUpdate
 
 image:
-  registry: quay.io
+  registry: gcr.io
   repository: havulv/reflector
 
   # Override the image tag to deploy by setting this variable.

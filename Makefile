@@ -90,10 +90,10 @@ debug/%: #help: Installs Delve, compiles a test binary, and runs dlv test
 	@go test -c -o debug.test ./pkg/$(shell basename $@)/*.go
 	@dlv test -wd ./cmd/
 
-image:
-	docker build .
+image: #help: Builds the docker image
+	docker build . -t gcr.io/havulv/reflector:latest
 
-image/local:
+image/local: #help: builds and tags a docker image destined for a local registry
 	docker build . -t localhost:5000/havulv/reflector:latest \
 		--build-arg COMMIT_HASH="$(shell git rev-parse --short HEAD)" \
 		--build-arg SEMVER="$(shell git describe --tags --always --dirty)" \
