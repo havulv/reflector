@@ -34,6 +34,7 @@ jobs:
           - 'deploy/chart/**/*'
 
   security:
+    name: Security
     runs-on: ubuntu-latest
     needs: changes
     if: |
@@ -59,7 +60,7 @@ jobs:
     - name: Lint
       uses: golangci/golangci-lint-action@v2
       with:
-        args: --sort-results --config ./.golangci.yaml
+        args: --sort-results --config ./.config/.golangci.yaml
 
   build:
     name: Build
