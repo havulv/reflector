@@ -103,7 +103,7 @@ jobs:
         make image/current
         echo "Saving image and gzipping it..."
         docker image ls
-        docker save gcr.io/havulv/reflector:$(git describe --tags --always) | pigz > reflector.tar.gz
+        docker save gcr.io/havulv/reflector:$(git describe --tags --always --dirty) | pigz > reflector.tar.gz
 
     - name: Upload image 
       uses: actions/upload-artifact@v2
