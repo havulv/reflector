@@ -103,7 +103,6 @@ image/local:
 .PHONY: docs
 docs:
 	mkdocs serve -f .config/mkdocs.yaml
-	cp docs/CNAME site/CNAME
 
 .PHONY: docs/release
 docs/release:
