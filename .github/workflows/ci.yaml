@@ -29,6 +29,7 @@ jobs:
           - 'go.mod'
           - 'go.sum'
           - 'test/e2e/**/*'
+          - '.config/.golangci.yaml'
           charts:
           - 'deploy/chart/Chart.yaml'
           - 'deploy/chart/**/*'
