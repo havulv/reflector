@@ -1,0 +1,66 @@
+site_name: |
+  [Kubernetes Secret] Reflector
+repo_name: "havulv/reflector"
+
+repo_url: https://github.com/havulv/reflector
+site_url: https://reflector.havulv.io/
+docs_dir: ../docs
+site_dir: ../docs
+remote_branch: docs
+
+markdown_extensions:
+- admonition
+- abbr
+- attr_list
+- def_list
+- footnotes
+- meta
+- md_in_html
+- toc:
+    # insert a blank space before the character
+    permalink: " ¶"
+- pymdownx.arithmatex:
+    generic: true
+- pymdownx.betterem:
+    smart_enable: all
+- pymdownx.caret
+- pymdownx.critic
+- pymdownx.details
+- pymdownx.emoji:
+    emoji_index: !!python/name:materialx.emoji.twemoji
+    emoji_generator: !!python/name:materialx.emoji.to_svg
+- pymdownx.highlight
+- pymdownx.inlinehilite
+- pymdownx.keys
+- pymdownx.mark
+- pymdownx.smartsymbols
+- pymdownx.snippets:
+    check_paths: true
+- pymdownx.superfences:
+    custom_fences:
+    - name: mermaid
+      class: mermaid
+      format: !!python/name:pymdownx.superfences.fence_code_format
+- pymdownx.tabbed
+- pymdownx.tasklist:
+    custom_checkbox: true
+- pymdownx.tilde
+
+theme:
+  font:
+    text: Work Sans
+  logo: assets/logo.png
+  name: material
+  palette:
+  - scheme: default
+    media: "(prefers-color-scheme: light)"
+    primary: green
+    toggle:
+      icon: material/weather-night
+      name: Switch to dark mode
+  - scheme: slate
+    media: "(prefers-color-scheme: dark)"
+    primary: teal
+    toggle:
+      icon: material/weather-sunny
+      name: Switch to light mode

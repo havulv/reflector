@@ -18,7 +18,7 @@ help:
 	@grep -oR "^\(.*:\|\)\s*#help: .*$$" Makefile | sed -e 's/\(.*\):\s*#help:\(.*\)/make \1 \n\2\n/'
 
 lint: #help: Runs golangci-lint on the entire project.
-	@golangci-lint run --sort-results --config ./.golangci.yaml
+	@golangci-lint run --sort-results --config ./.config/.golangci.yaml
 
 clean: #help: Cleans out all temporary files created from test runs
 	@rm ./test/coverage.out 2> /dev/null || exit 0
@@ -99,6 +99,15 @@ image/local:
 		--build-arg SEMVER="$(shell git describe --tags --always --dirty)" \
 		--build-arg COMMIT_DATE="$(shell git log -1 --format=%ci)"
 	docker push localhost:5000/havulv/reflector:latest
+
+.PHONY: docs
+docs:
+	mkdocs serve -f .config/mkdocs.yml
+
+.PHONY: docs/release
+docs/release:
+	mkdocs build --config-file .config/mkdocs.yml
+	mkdocs gh-deploy --config-file .config/mkdocs.yml
 
 stop:
 	docker stop `docker ps -aq` 2> /dev/null && docker rm `docker ps -aq` 2> /dev/null; :
