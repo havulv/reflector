@@ -23,6 +23,8 @@ jobs:
           docs:
           - 'docs/**/*'
           - '.config/mkdocs.yaml'
+          # trigger when we edit the job
+          - '.github/workflow/docs.yaml'
 
   deploy:
     runs-on: ubuntu-latest
@@ -41,7 +43,10 @@ jobs:
     - name: Build
       run: |
         pip install mkdocs mkdocs_material
+        make docs/release
 
     - name: Deploy
-      run: |
-        make docs/release
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./site

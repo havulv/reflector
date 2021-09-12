@@ -103,11 +103,11 @@ image/local:
 .PHONY: docs
 docs:
 	mkdocs serve -f .config/mkdocs.yaml
+	cp docs/CNAME site/CNAME
 
 .PHONY: docs/release
 docs/release:
 	mkdocs build --config-file .config/mkdocs.yaml
-	mkdocs gh-deploy --config-file .config/mkdocs.yaml
 
 stop:
 	docker stop `docker ps -aq` 2> /dev/null && docker rm `docker ps -aq` 2> /dev/null; :
