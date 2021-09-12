@@ -9,6 +9,7 @@ on:
 
 jobs:
   changes:
+    name: Filter Changes
     runs-on: ubuntu-latest
     outputs:
       go: ${{ steps.filter.outputs.go }}
@@ -27,7 +28,6 @@ jobs:
           - '**/*.go'
           - 'go.mod'
           - 'go.sum'
-          - 'TAG'
           - 'test/e2e/**/*'
           charts:
           - 'deploy/chart/Chart.yaml'
@@ -49,6 +49,7 @@ jobs:
         args: -exclude-dir=test -exclude-dir=docs ./... --timeout 2m
 
   lint:
+    name: Lint Go Files
     runs-on: ubuntu-latest
     needs: changes
     if: |
