@@ -22,6 +22,7 @@ jobs:
         filters: |
           docs:
           - 'docs/**/*'
+          - '.config/mkdocs.yaml'
 
   deploy:
     runs-on: ubuntu-latest

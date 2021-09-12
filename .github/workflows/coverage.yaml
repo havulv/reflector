@@ -23,7 +23,6 @@ jobs:
           - '**/*.go'
           - 'go.mod'
           - 'go.sum'
-          - 'TAG'
           - 'test/e2e/**/*'
 
   codecov:
