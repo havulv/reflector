@@ -110,6 +110,15 @@ image/local: #help: builds and tags a docker image destined for a local registry
 		--build-arg COMMIT_DATE="$(shell git log -1 --format=%ci)"
 	docker push localhost:5000/havulv/reflector:latest
 
+image/release:
+	@docker build . -t gcr.io/havulv/reflector:$(shell git describe --tags --always) \
+		--build-arg COMMIT_HASH="$(shell git rev-parse --short HEAD)" \
+		--build-arg SEMVER="$(shell git describe --tags --always --dirty)" \
+		--build-arg COMMIT_DATE="$(shell git log -1 --format=%ci)"
+	docker push gcr.io/havulv/reflector:$(shell git describe --tags --always)
+
+
+
 .PHONY: docs
 docs:
 	mkdocs serve -f .config/mkdocs.yaml
