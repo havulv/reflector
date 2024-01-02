@@ -92,6 +92,10 @@ debug/%: #help: Installs Delve, compiles a test binary, and runs dlv test
 	@dlv test -wd ./cmd/
 
 image: #help: Builds the image at the current tag
+	@docker build . -t havulv/reflector:$(shell git describe --tags --always --dirty) \
+		--build-arg COMMIT_HASH="$(shell git rev-parse --short HEAD)" \
+		--build-arg SEMVER="$(shell git describe --tags --always --dirty)" \
+		--build-arg COMMIT_DATE="$(shell git log -1 --format=%ci)"
 
 image/current: #help: Builds the latest docker image
 	@docker build . -t gcr.io/havulv/reflector:$(shell git describe --tags --always --dirty) \
