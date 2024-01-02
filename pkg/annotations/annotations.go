@@ -1,9 +1,9 @@
 // Package annotations holds the logic for examining
 // and extracting information from annotations.
 // This includes functionality such as:
-//   * Namespace parsing and fetching
-//   * Ownerhship considerations
-//   * And the general constant strings for annotations
+//   - Namespace parsing and fetching
+//   - Ownerhship considerations
+//   - And the general constant strings for annotations
 package annotations
 
 import (

@@ -17,7 +17,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - uses: dorny/paths-filter@v2
       id: filter
@@ -44,10 +44,10 @@ jobs:
       (needs.changes.outputs.go == 'true')
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Run Gosec Security Scanner
-      uses: securego/gosec@master
+      uses: securego/gosec@v2
       with:
         args: -exclude-dir=test -exclude-dir=docs ./... --timeout 2m
 
@@ -59,10 +59,16 @@ jobs:
       (needs.changes.outputs.go == 'true')
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
+
+    - name: Set up Go 1.21.5
+      uses: actions/setup-go@v4
+      id: go
+      with:
+        go-version: '1.21.5'
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v2
+      uses: golangci/golangci-lint-action@v3
       with:
         args: --sort-results --config ./.config/.golangci.yaml
 
@@ -74,20 +80,20 @@ jobs:
       (needs.changes.outputs.go == 'true' || needs.changes.outputs.charts == 'true')
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Go 1.21.5
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v4
       id: go
       with:
         go-version: 1.21.5
 
     - name: Set up Docker Buildx
       id: buildx
-      uses: docker/setup-buildx-action@v1
+      uses: docker/setup-buildx-action@v3
 
     - name: Cache Docker layers
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: /tmp/.buildx-cache
         key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -99,7 +105,7 @@ jobs:
 
     - name: Build image
       id: docker_build
-      uses: docker/build-push-action@v2
+      uses: docker/build-push-action@v5
       with:
         context: ./
         file: ./Dockerfile
@@ -117,7 +123,7 @@ jobs:
         cat reflector.tar | pigz > reflector.tar.gz
 
     - name: Upload image 
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: reflector.tar.gz
         path: reflector.tar.gz
@@ -134,11 +140,11 @@ jobs:
       (needs.changes.outputs.go == 'true')
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set up Go 1.21.5
       id: go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v4
       with:
         go-version: 1.21.5
 
@@ -163,10 +169,10 @@ jobs:
       (needs.changes.outputs.charts == 'true')
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
   
     - name: Fetch image
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
         name: reflector.tar.gz
 
@@ -175,8 +181,9 @@ jobs:
         sudo mkdir -p $HOME/.kube
         sudo chmod -R 777 $HOME/.kube
   
-    - uses: geekyeggo/delete-artifact@v1
+    - uses: geekyeggo/delete-artifact@v4
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         name: reflector.tar.gz
         failOnError: false
 
@@ -202,7 +209,8 @@ jobs:
     - build
     - helm
     steps:
-    - uses: geekyeggo/delete-artifact@v1
+    - uses: geekyeggo/delete-artifact@v4
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         name: reflector.tar.gz
         failOnError: false

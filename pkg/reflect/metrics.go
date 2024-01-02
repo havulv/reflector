@@ -45,7 +45,7 @@ var (
 	)
 )
 
-// nolint:gochecknoinits // registering metrics on init is standard best practice
+//nolint:gochecknoinits // registering metrics on init is standard best practice
 func init() {
 	prometheus.MustRegister(reflectorReflections)
 	prometheus.MustRegister(reflectorReflectionLatency)
