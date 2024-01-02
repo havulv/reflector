@@ -1,14 +1,16 @@
 run:
+  timeout: 5m
   misspell:
     # Correct spellings using locale preferences for US or UK.
     # Default is to use a neutral variety of English.
     locale: UK
 
 linters:
+  disable:
+    - depguard
   enable:
     - bodyclose
-    - deadcode
-    - depguard
+    - unused
     - dogsled
     - dupl
     - errcheck
@@ -33,11 +35,9 @@ linters:
     - rowserrcheck
     - exportloopref
     - staticcheck
-    - structcheck
     - stylecheck
     - typecheck
     - unconvert
     - unparam
     - unused
-    - varcheck
     - whitespace

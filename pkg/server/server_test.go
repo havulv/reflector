@@ -69,7 +69,8 @@ func TestRun(t *testing.T) {
 
 		s := &server{
 			Server: http.Server{
-				Addr: "localhost:8085",
+				ReadTimeout: 1 * time.Second,
+				Addr:        "localhost:8085",
 			},
 			logger: l,
 		}
@@ -104,7 +105,8 @@ func TestServe(t *testing.T) {
 
 		s := &server{
 			Server: http.Server{
-				Addr: "localhost:8090",
+				ReadTimeout: 1 * time.Second,
+				Addr:        "localhost:8090",
 			},
 		}
 		go func() {

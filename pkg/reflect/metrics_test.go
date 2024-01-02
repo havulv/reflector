@@ -14,7 +14,7 @@ func TestValidMetrics(t *testing.T) {
 		reflectorReflections.WithLabelValues(vals...).Inc()
 		m, err := reflectorReflections.GetMetricWithLabelValues(vals...)
 		require.Nil(t, err)
-		assert.Equal(t, "Desc{fqName: \"reflector_reflections_reflected_total\", help: \"The number of total reflections since the start of the reflector\", constLabels: {}, variableLabels: [reflection_action secret success namespace]}", m.Desc().String())
+		assert.Equal(t, "Desc{fqName: \"reflector_reflections_reflected_total\", help: \"The number of total reflections since the start of the reflector\", constLabels: {}, variableLabels: {reflection_action,secret,success,namespace}}", m.Desc().String())
 	})
 
 	t.Run("reflection secret latency is correct", func(t *testing.T) {
@@ -23,7 +23,7 @@ func TestValidMetrics(t *testing.T) {
 		reflectorSecretLatency.WithLabelValues(vals...).Observe(3)
 		m, err := reflectorSecretLatency.MetricVec.GetMetricWithLabelValues(vals...)
 		require.Nil(t, err)
-		assert.Equal(t, "Desc{fqName: \"reflector_reflections_reflect_latency\", help: \"The latency for the reflection of a single secret\", constLabels: {}, variableLabels: [secret namespace]}", m.Desc().String())
+		assert.Equal(t, "Desc{fqName: \"reflector_reflections_reflect_latency\", help: \"The latency for the reflection of a single secret\", constLabels: {}, variableLabels: {secret,namespace}}", m.Desc().String())
 	})
 
 	t.Run("reflection latency is correct", func(t *testing.T) {
@@ -32,6 +32,6 @@ func TestValidMetrics(t *testing.T) {
 		reflectorReflectionLatency.WithLabelValues(vals...).Observe(10)
 		m, err := reflectorReflectionLatency.MetricVec.GetMetricWithLabelValues(vals...)
 		require.Nil(t, err)
-		assert.Equal(t, "Desc{fqName: \"reflector_reflections_reflection_latency\", help: \"The latency from when a reflection is detected, to when it is completely reflected\", constLabels: {}, variableLabels: [secret]}", m.Desc().String())
+		assert.Equal(t, "Desc{fqName: \"reflector_reflections_reflection_latency\", help: \"The latency from when a reflection is detected, to when it is completely reflected\", constLabels: {}, variableLabels: {secret}}", m.Desc().String())
 	})
 }
