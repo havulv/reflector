@@ -2,9 +2,9 @@ package reflect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/semaphore"
 )
