@@ -52,7 +52,7 @@ func TestNewMetricsServer(t *testing.T) {
 		t.Parallel()
 		buf := bytes.NewBuffer([]byte{})
 		l := zerolog.New(buf)
-		addr := "localhost:8083"
+		addr := "localhost:0"
 		s := NewMetricsServer(l, addr)
 		require.NotNil(t, s)
 		assert.Equal(t, s.(*server).Addr, addr)
@@ -70,7 +70,7 @@ func TestRun(t *testing.T) {
 		s := &server{
 			Server: http.Server{
 				ReadTimeout: 1 * time.Second,
-				Addr:        "localhost:8085",
+				Addr:        "localhost:0",
 			},
 			logger: l,
 		}
@@ -85,10 +85,11 @@ func TestRun(t *testing.T) {
 			t,
 			logs,
 			`{"level":"info","message":"Waiting on goroutines to finish after running server shutdown..."}`)
+		// ignore the host log since we are binding to any open port
 		assert.Contains(
 			t,
 			logs,
-			`{"level":"info","address":"localhost:8085","message":"Started server"}`)
+			`"message":"Started server"}`)
 		assert.Contains(
 			t,
 			logs,
@@ -106,7 +107,7 @@ func TestServe(t *testing.T) {
 		s := &server{
 			Server: http.Server{
 				ReadTimeout: 1 * time.Second,
-				Addr:        "localhost:8090",
+				Addr:        "localhost:0",
 			},
 		}
 		go func() {
@@ -118,12 +119,15 @@ func TestServe(t *testing.T) {
 			assert.Nil(t, err)
 		}()
 		serve(s, l, cancel)
-		assert.Equal(
+		logs := buf.String()
+		assert.Contains(
 			t,
-			`{"level":"info","address":"localhost:8090","message":"Started server"}
-{"level":"info","message":"Server shut down"}
-`,
-			buf.String())
+			logs,
+			`,"message":"Started server"}`)
+		assert.Contains(
+			t,
+			logs,
+			`{"level":"info","message":"Server shut down"}`)
 	})
 }
 

@@ -8,9 +8,10 @@ package annotations
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -65,7 +66,7 @@ func ParseOrFetchNamespaces(
 	} else if len(namespaces) == 0 {
 		found, err := client.Namespaces().List(ctx, metav1.ListOptions{})
 		if err != nil {
-			return []string{}, errors.Wrap(err, "unable to list namespaces")
+			return []string{}, fmt.Errorf("unable to list namespaces: %w", err)
 		}
 		for _, namespace := range found.Items {
 			namespaces = append(namespaces, namespace.Name)

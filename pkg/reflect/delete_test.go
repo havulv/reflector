@@ -3,14 +3,14 @@ package reflect
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -122,10 +122,12 @@ func TestCascadeDelete(t *testing.T) {
 					test.namespaces,
 					test.concurrency))
 			if test.err == nil && len(test.namespaces) > 0 {
+				fmt.Printf("%s %s\n", test.toDelete, test.namespaces[len(test.namespaces)-1])
 				sec, err := client.CoreV1().Secrets(test.namespaces[len(test.namespaces)-1]).Get(
 					ctx, test.toDelete, metav1.GetOptions{})
-				assert.Nil(t, sec)
 				assert.True(t, apierrors.IsNotFound(err))
+				assert.NotNil(t, sec)
+				assert.Equal(t, sec.Name, "")
 			}
 		})
 	}
@@ -133,28 +135,24 @@ func TestCascadeDelete(t *testing.T) {
 
 func TestDeleteSecret(t *testing.T) {
 	tests := []struct {
-		d         string
-		err       error
-		expectErr error
+		d           string
+		insertedErr error
+		err         string
 	}{
 		{
 			"deletes a secret",
 			nil,
-			nil,
+			"",
 		},
 		{
 			"fails to delete a secret",
-			errors.New("deletion failure"),
-			errors.New("deletion failure"),
-		},
-		{
-			"fails to find a secret",
-			nil,
 			&apierrors.StatusError{
 				ErrStatus: metav1.Status{
-					Reason: metav1.StatusReasonNotFound,
+					Reason:  metav1.StatusReasonNotFound,
+					Message: "not found",
 				},
 			},
+			"error while removing secret from the namspace: not found",
 		},
 	}
 
@@ -166,37 +164,25 @@ func TestDeleteSecret(t *testing.T) {
 			secret := &v1.Secret{}
 			secret.Name = s
 			secret.Namespace = "default"
-			buf := bytes.NewBuffer([]byte{})
-			l := zerolog.New(buf)
-			wg := sync.WaitGroup{}
-			client := fake.NewSimpleClientset(secret)
-			if test.expectErr != nil {
+			client := fake.NewClientset(secret)
+			if test.insertedErr != nil {
 				client.PrependReactor("delete", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-						return true, nil, test.expectErr
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+						return true, nil, test.insertedErr
 					})
 			}
-			errChan := make(chan error, 2)
+
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			deleteSecret(ctx, l, &wg, client.CoreV1(), s, "default", errChan)
 
-			wg.Wait()
-			select {
-			case err := <-errChan:
-				t.Log("received error")
-				if test.err == nil {
-					t.Logf("failed with err: %s", err.Error())
-					t.Fail()
-				}
-			default:
-				if test.err != nil {
-					t.Log("failed to get error")
-					t.Fail()
-					return
-				}
-				t.Log("test succeeded!")
+			err := deleteSecret(ctx, client.CoreV1(), s, "default")
+
+			if test.err != "" {
+				require.NotNil(t, err)
+				assert.EqualError(t, err, test.err)
+				return
 			}
+			assert.Nil(t, err)
 		})
 	}
 }
@@ -315,14 +301,14 @@ func TestFindExistingSecretNamespaces(t *testing.T) {
 
 			if test.listErr != nil {
 				client.PrependReactor("list", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, test.listErr
 					})
 			}
 
 			if test.secretErr != nil {
 				client.PrependReactor("get", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, test.secretErr
 					})
 			}

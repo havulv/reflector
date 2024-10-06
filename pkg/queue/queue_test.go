@@ -18,7 +18,7 @@ func TestAdd(t *testing.T) {
 	tests := []struct {
 		descrip string
 		obj     *v1.Secret
-		rl      *mocks.RateLimiter
+		rl      func(*testing.T) RateLimiter
 	}{
 		{
 			"adds the key if no error",
@@ -27,21 +27,26 @@ func TestAdd(t *testing.T) {
 					Name: "this",
 				},
 			},
-			&mocks.RateLimiter{},
+			func(t *testing.T) RateLimiter {
+				return mocks.NewRateLimiter(t)
+			},
 		},
 		{
 			"does not add the key if error",
 			&v1.Secret{},
-			&mocks.RateLimiter{},
+			func(t *testing.T) RateLimiter {
+				return mocks.NewRateLimiter(t)
+			},
 		},
 	}
 
 	for _, l := range tests {
 		test := l
 		t.Run(test.descrip, func(t *testing.T) {
-			f := add(test.rl)
+			rl := test.rl(t)
+			f := add(rl)
 			if test.obj != nil {
-				test.rl.On("AddRateLimited", test.obj.Name)
+				rl.(*mocks.RateLimiter).On("AddRateLimited", test.obj.Name)
 			}
 			f(test.obj)
 		})

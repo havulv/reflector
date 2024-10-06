@@ -22,7 +22,7 @@ linters:
     - gofmt
     - goimports
     - revive
-    - gomnd
+    - mnd
     - goprintffuncname
     - gosec
     - gosimple
@@ -33,7 +33,7 @@ linters:
     - noctx
     - nolintlint
     - rowserrcheck
-    - exportloopref
+    - copyloopvar
     - staticcheck
     - stylecheck
     - typecheck
@@ -41,3 +41,22 @@ linters:
     - unparam
     - unused
     - whitespace
+    - containedctx
+    - contextcheck
+    - decorder
+    - dupword
+    - errname
+    - godot
+    - godox
+    - gci
+    - interfacebloat
+    - nestif
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - promlinter
+    - tenv
+    - zerologlint

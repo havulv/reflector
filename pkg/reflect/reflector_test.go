@@ -3,10 +3,10 @@ package reflect
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -50,7 +50,7 @@ func TestNewReflector(t *testing.T) {
 		t.Run(test.descrip, func(t *testing.T) {
 			t.Parallel()
 			r, err := NewReflector(
-				zerolog.New(bytes.NewBuffer([]byte{})),
+				zerolog.New(zerolog.NewTestWriter(t)),
 				fake.NewSimpleClientset(),
 				test.rCon,
 				test.wCon,
@@ -90,22 +90,29 @@ func TestNext(t *testing.T) {
 		test := l
 		t.Run(test.descrip, func(t *testing.T) {
 			t.Parallel()
-			limiter := workqueue.NewItemExponentialFailureRateLimiter(
+			limiter := workqueue.NewTypedItemExponentialFailureRateLimiter[string](
 				1*time.Millisecond, 1*time.Millisecond)
-			queue := workqueue.NewRateLimitingQueue(limiter)
+			queue := workqueue.NewTypedRateLimitingQueue[string](limiter)
 			source := fcache.NewFakeControllerSource()
-			indexer, informer := cache.NewIndexerInformer(
-				source, &v1.Secret{}, 0,
-				cache.ResourceEventHandlerFuncs{
-					AddFunc:    func(obj interface{}) {},
-					UpdateFunc: func(old interface{}, new interface{}) {},
-					DeleteFunc: func(obj interface{}) {},
-				}, cache.Indexers{})
+			store, informer := cache.NewInformerWithOptions(
+				cache.InformerOptions{
+					ListerWatcher: source,
+					ObjectType:    &v1.Secret{},
+					Handler: cache.ResourceEventHandlerFuncs{
+						AddFunc:    func(_ any) {},
+						UpdateFunc: func(_ any, _ any) {},
+						DeleteFunc: func(_ any) {},
+					},
+					Indexers: cache.Indexers{},
+				})
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
 
 			r := reflector{
-				ctx:        context.Background(),
+				ctx:        ctx,
 				queue:      queue,
-				indexer:    indexer,
+				store:      store,
 				controller: informer,
 			}
 
@@ -115,13 +122,13 @@ func TestNext(t *testing.T) {
 				defer r.queue.ShutDown()
 			}
 
-			require.Nil(t, indexer.Add(&v1.Secret{
+			require.Nil(t, store.Add(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "thing",
 				},
 			}))
 
-			r.queue.AddRateLimited(interface{}("thing"))
+			r.queue.AddRateLimited("thing")
 
 			if test.shutdown {
 				assert.False(t, r.next())
@@ -231,59 +238,67 @@ func TestProcess(t *testing.T) {
 		test := l
 		t.Run(test.descrip, func(t *testing.T) {
 			t.Parallel()
-			limiter := workqueue.NewItemExponentialFailureRateLimiter(
+			limiter := workqueue.NewTypedItemExponentialFailureRateLimiter[string](
 				1*time.Millisecond, 1*time.Millisecond)
-			queue := workqueue.NewRateLimitingQueue(limiter)
+			queue := workqueue.NewTypedRateLimitingQueue[string](limiter)
 			source := fcache.NewFakeControllerSource()
-			indexer, informer := cache.NewIndexerInformer(
-				source, &v1.Secret{}, 0,
-				cache.ResourceEventHandlerFuncs{
-					AddFunc: func(obj interface{}) {
-						key, err := cache.MetaNamespaceKeyFunc(obj)
-						if err == nil {
-							queue.AddRateLimited(key)
-						}
+			store, informer := cache.NewInformerWithOptions(
+				cache.InformerOptions{
+					ListerWatcher: source,
+					ObjectType:    &v1.Secret{},
+					Handler: cache.ResourceEventHandlerFuncs{
+						AddFunc: func(obj any) {
+							key, err := cache.MetaNamespaceKeyFunc(obj)
+							if err == nil {
+								queue.AddRateLimited(key)
+							}
+						},
+						UpdateFunc: func(_ any, n any) {
+							key, err := cache.MetaNamespaceKeyFunc(n)
+							if err == nil {
+								queue.AddRateLimited(key)
+							}
+						},
+						DeleteFunc: func(obj any) {
+							t.Logf("deletion for queue %v", obj)
+							key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+							if err == nil {
+								t.Logf("adding to queue %s", key)
+								queue.AddRateLimited(key)
+							}
+						},
 					},
-					UpdateFunc: func(old interface{}, new interface{}) {
-						key, err := cache.MetaNamespaceKeyFunc(new)
-						if err == nil {
-							queue.AddRateLimited(key)
-						}
-					},
-					DeleteFunc: func(obj interface{}) {
-						t.Logf("deletion for queue %v", obj)
-						key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-						if err == nil {
-							t.Logf("adding to queue %s", key)
-							queue.AddRateLimited(key)
-						}
-					},
-				}, cache.Indexers{})
+					Indexers: cache.Indexers{},
+				})
 
 			client := fake.NewSimpleClientset()
 			if test.nsErr != nil {
 				client.PrependReactor("*", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, errors.New("some error")
 					})
 			}
 
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
 			buf := bytes.NewBuffer([]byte{})
 			r := reflector{
-				ctx:           context.Background(),
-				logger:        zerolog.New(buf),
-				core:          client.CoreV1(),
-				queue:         queue,
-				indexer:       indexer,
-				controller:    informer,
-				cascadeDelete: test.cascadeDelete,
+				ctx:                ctx,
+				logger:             zerolog.New(buf),
+				core:               client.CoreV1(),
+				queue:              queue,
+				store:              store,
+				controller:         informer,
+				cascadeDelete:      test.cascadeDelete,
+				reflectConcurrency: 1,
 			}
 
 			if test.rm {
-				require.Nil(t, indexer.Delete(test.secret))
+				require.Nil(t, store.Delete(test.secret))
 			} else {
-				require.Nil(t, indexer.Add(test.secret))
-				t.Log(indexer)
+				require.Nil(t, store.Add(test.secret))
+				t.Log(store)
 			}
 
 			if test.err != nil {
@@ -328,9 +343,9 @@ func TestHandleErr(t *testing.T) {
 		t.Run(test.descrip, func(t *testing.T) {
 			t.Parallel()
 			buf := bytes.NewBuffer([]byte{})
-			limiter := workqueue.NewItemExponentialFailureRateLimiter(
+			limiter := workqueue.NewTypedItemExponentialFailureRateLimiter[string](
 				1*time.Millisecond, 1*time.Millisecond)
-			queue := workqueue.NewRateLimitingQueue(limiter)
+			queue := workqueue.NewTypedRateLimitingQueue[string](limiter)
 			r := &reflector{
 				logger:  zerolog.New(buf),
 				queue:   queue,
@@ -338,10 +353,10 @@ func TestHandleErr(t *testing.T) {
 			}
 
 			if test.retries > 0 && test.err != nil {
-				limiter.When(interface{}("thing"))
+				limiter.When("thing")
 			}
 
-			r.handleErr(test.err, interface{}("thing"))
+			r.handleErr(test.err, "thing")
 
 			if test.retries < 0 && test.err != nil {
 				assert.Contains(t, buf.String(), "Dropping")
@@ -386,23 +401,26 @@ func TestStart(t *testing.T) {
 		test := l
 		t.Run(test.descrip, func(t *testing.T) {
 			t.Parallel()
-			buf := bytes.NewBuffer([]byte{})
-			limiter := workqueue.NewItemExponentialFailureRateLimiter(
+			limiter := workqueue.NewTypedItemExponentialFailureRateLimiter[string](
 				1*time.Millisecond, 1*time.Millisecond)
-			queue := workqueue.NewRateLimitingQueue(limiter)
+			queue := workqueue.NewTypedRateLimitingQueue[string](limiter)
 			source := fcache.NewFakeControllerSource()
-			indexer, informer := cache.NewIndexerInformer(
-				source, &v1.Pod{}, 0,
-				cache.ResourceEventHandlerFuncs{
-					AddFunc:    func(obj interface{}) {},
-					UpdateFunc: func(old interface{}, new interface{}) {},
-					DeleteFunc: func(obj interface{}) {},
-				}, cache.Indexers{})
+			store, informer := cache.NewInformerWithOptions(
+				cache.InformerOptions{
+					ListerWatcher: source,
+					ObjectType:    &v1.Secret{},
+					Handler: cache.ResourceEventHandlerFuncs{
+						AddFunc:    func(_ any) {},
+						UpdateFunc: func(_ any, _ any) {},
+						DeleteFunc: func(_ any) {},
+					},
+					Indexers: cache.Indexers{},
+				})
 
 			r := &reflector{
-				logger:            zerolog.New(buf),
+				logger:            zerolog.New(zerolog.NewTestWriter(t)),
 				queue:             queue,
-				indexer:           indexer,
+				store:             store,
 				controller:        informer,
 				hasSynced:         func() bool { return true },
 				workerConcurrency: 1,
@@ -446,7 +464,6 @@ func TestStart(t *testing.T) {
 			case err = <-errChan:
 			case <-timer.C:
 				t.Log("timer timed out while waiting for error")
-				t.Log(buf.String())
 				t.FailNow()
 			}
 			if test.timeout || test.failNow {
@@ -470,9 +487,9 @@ func TestWorker(t *testing.T) {
 		test := l
 		t.Run(test.descrip, func(t *testing.T) {
 			t.Parallel()
-			limiter := workqueue.NewItemExponentialFailureRateLimiter(
+			limiter := workqueue.NewTypedItemExponentialFailureRateLimiter[string](
 				1*time.Millisecond, 1*time.Millisecond)
-			queue := workqueue.NewRateLimitingQueue(limiter)
+			queue := workqueue.NewTypedRateLimitingQueue[string](limiter)
 			r := reflector{
 				queue: queue,
 			}

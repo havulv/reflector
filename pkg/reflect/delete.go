@@ -2,11 +2,9 @@ package reflect
 
 import (
 	"context"
-	"sync"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -28,48 +26,41 @@ func cascadeDelete(
 	}
 
 	return batchOverNamespaces(
+		ctx,
+		logger,
 		concurrency,
 		namespaces,
-		deleteLambda(ctx, logger, client, secret))
+		deleteLambda(client, secret))
 }
 
 func deleteLambda(
-	ctx context.Context,
-	logger zerolog.Logger,
 	client corev1.SecretsGetter,
 	secret string,
-) func(wg *sync.WaitGroup, ns string, errChan chan error) {
-	return func(wg *sync.WaitGroup, ns string, errChan chan error) {
+) func(context.Context, string) error {
+	return func(ctx context.Context, ns string) error {
 		// spin off a goroutine for every level of concurrency
-		deleteSecret(
-			ctx, logger.With().
-				Str("reflectionNamespace", ns).Logger(),
-			wg, client, secret, ns, errChan)
+		return deleteSecret(
+			ctx, client, secret, ns)
 	}
 }
 
 func deleteSecret(
 	ctx context.Context,
-	logger zerolog.Logger,
-	wg *sync.WaitGroup,
 	client corev1.SecretsGetter,
 	secret string,
 	ns string,
-	errChan chan error,
-) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		secretClient := client.Secrets(ns)
-		if err := secretClient.Delete(
-			ctx, secret, metav1.DeleteOptions{},
-		); err != nil && !apierrors.IsNotFound(err) {
-			logger.Error().Err(err).Msg("unable to delete secret")
-			errChan <- errors.Wrap(
-				err,
-				"error while removing secret from the namspace")
-		}
-	}()
+) error {
+	// Not found errors are returned as errors, so that the
+	// caller can deal with them upstream. In the batch form
+	// it will just be logged, so it doesn't really matter there.
+	secretClient := client.Secrets(ns)
+	if err := secretClient.Delete(
+		ctx, secret, metav1.DeleteOptions{},
+	); err != nil {
+		return fmt.Errorf(
+			"error while removing secret from the namspace: %w", err)
+	}
+	return nil
 }
 
 func findExistingSecretNamespaces(
@@ -80,14 +71,14 @@ func findExistingSecretNamespaces(
 	// fetch all namespaces
 	allNs, err := core.Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return []string{}, errors.Wrap(err, "unable to list all namespaces")
+		return []string{}, fmt.Errorf("unable to list all namespaces: %w", err)
 	}
 
 	namespaces := []string{}
 	for _, item := range allNs.Items {
 		found, err := core.Secrets(item.Name).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
-			return []string{}, errors.Wrap(err, "could not fetch secret for ns")
+			return []string{}, fmt.Errorf("could not fetch secret for ns: %w", err)
 		}
 		if annotations.CanOperate(found.Annotations) {
 			namespaces = append(namespaces, item.Name)

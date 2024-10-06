@@ -1,7 +1,8 @@
 package k8s
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -10,8 +11,6 @@ import (
 // CreateK8sClient creates a kubernetes client based on a config passed to it.
 // If a kube config is not passed to the function, we assume we are inside a cluster
 // and try to construct an in cluster configuration
-// TODO: we can test this, but it is really troublesome because it takes a lot
-// of closures and mocking to do for little gain. The TODO is to actually test it though
 func CreateK8sClient(
 	kubeconfig *string,
 ) (kubernetes.Interface, error) {
@@ -21,18 +20,17 @@ func CreateK8sClient(
 		// creates the in-cluster config
 		config, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to get cluster config")
+			return nil, fmt.Errorf("unable to get cluster config: %w", err)
 		}
 	} else {
 		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to create config from kubeconfig")
+			return nil, fmt.Errorf("unable to create config from kubeconfig: %w", err)
 		}
 	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create clientset with in cluster config")
-	}
-	return clientset, nil
+	// creates the clientset -- we panic here, because the configuration is loaded
+	// and vetted far before it gets to the registration steps and further validation.
+	// A panic is a much better signal to the user than an error here, because something
+	// is really wrong.
+	return kubernetes.NewForConfigOrDie(config), nil
 }

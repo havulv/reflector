@@ -10,16 +10,14 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// RateLimiter is the minimal interface needed for a rate limiting
-// queue.
 type RateLimiter interface {
-	AddRateLimited(interface{})
+	AddRateLimited(string)
 }
 
 func add(
 	queue RateLimiter,
-) func(interface{}) {
-	return func(obj interface{}) {
+) func(any) {
+	return func(obj any) {
 		key, err := cache.MetaNamespaceKeyFunc(obj)
 		if err == nil {
 			queue.AddRateLimited(key)
@@ -29,8 +27,8 @@ func add(
 
 func update(
 	queue RateLimiter,
-) func(interface{}, interface{}) {
-	return func(old interface{}, updated interface{}) {
+) func(any, any) {
+	return func(_ any, updated any) {
 		key, err := cache.MetaNamespaceKeyFunc(updated)
 		if err == nil {
 			queue.AddRateLimited(key)
@@ -40,8 +38,8 @@ func update(
 
 func remove(
 	queue RateLimiter,
-) func(interface{}) {
-	return func(obj interface{}) {
+) func(any) {
+	return func(obj any) {
 		// IndexerInformer uses a delta queue, therefore for deletes we have to use this
 		// key function.
 		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
@@ -55,8 +53,8 @@ func remove(
 func CreateSecretsWorkQueue(
 	core corev1.CoreV1Interface,
 	namespace string,
-) (workqueue.RateLimitingInterface, cache.Indexer, cache.Controller) {
-	// create the pod watcher
+) (workqueue.TypedRateLimitingInterface[string], cache.Store, cache.Controller) {
+	// create the secret watcher
 	// We must grab everything because we can't filter by labels or
 	// annotations
 	secretListWatcher := cache.NewListWatchFromClient(
@@ -67,18 +65,24 @@ func CreateSecretsWorkQueue(
 	)
 
 	// create the workqueue
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	queue := workqueue.NewTypedRateLimitingQueue[string](workqueue.DefaultTypedControllerRateLimiter[string]())
 
 	// Bind the workqueue to a cache with the help of an informer. This way we make sure that
 	// whenever the cache is updated, the secret key is added to the workqueue.
 	// Note that when we finally process the item from the workqueue, we might see a newer version
 	// of the Pod than the version which was responsible for triggering the update.
-	indexer, informer := cache.NewIndexerInformer(secretListWatcher, &v1.Secret{}, 0, cache.ResourceEventHandlerFuncs{
-		AddFunc:    add(queue),
-		UpdateFunc: update(queue),
-		DeleteFunc: remove(queue),
-	}, cache.Indexers{})
-	return queue, indexer, informer
+	store, informer := cache.NewInformerWithOptions(
+		cache.InformerOptions{
+			ListerWatcher: secretListWatcher,
+			ObjectType:    &v1.Secret{},
+			Handler: cache.ResourceEventHandlerFuncs{
+				AddFunc:    add(queue),
+				UpdateFunc: update(queue),
+				DeleteFunc: remove(queue),
+			},
+			Indexers: cache.Indexers{},
+		})
+	return queue, store, informer
 }
 
 // ParseWorkQueueKey parses a key from the workqueue into its namespace

@@ -31,7 +31,7 @@ type server struct {
 }
 
 func healthcheck(healthInt *int32) func(w http.ResponseWriter, req *http.Request) {
-	return func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		if atomic.LoadInt32(healthInt) != 0 {
 			w.WriteHeader(http.StatusOK)
 			return

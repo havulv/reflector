@@ -2,9 +2,9 @@ package annotations
 
 import (
 	"context"
+	"errors"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
@@ -129,7 +129,7 @@ func TestParseOrFetchNamespaces(t *testing.T) {
 
 			if test.listErr != nil {
 				client.PrependReactor("*", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, test.listErr
 					})
 			}

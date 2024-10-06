@@ -1,49 +1,52 @@
 package reflect
 
 import (
-	"sync"
+	"context"
+	"errors"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"golang.org/x/sync/semaphore"
 )
 
+// batchOverNamespaces batches a lambda over namespaces, based on
+// some predetermined concurrency. Importantly, errors are non fatal
+// and only logged.
 func batchOverNamespaces(
+	ctx context.Context,
+	logger zerolog.Logger,
 	concurrency int,
 	namespaces []string,
-	lambda func(*sync.WaitGroup, string, chan error),
+	lambda func(context.Context, string) error,
 ) error {
-	counter := 0
-	limit := len(namespaces) - 1
-	wg := &sync.WaitGroup{}
-	errChan := make(chan error, concurrency)
-	for ind, namespace := range namespaces {
-		counter++
+	if concurrency < 1 {
+		return errors.New("concurrency value of less than 1")
+	}
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	sem := semaphore.NewWeighted(int64(concurrency))
+	for _, namespace := range namespaces {
+		if err := sem.Acquire(ctx, 1); err != nil {
+			return fmt.Errorf("failed to acquire semaphore: %w", err)
+		}
+
 		ns := namespace
 
-		lambda(wg, ns, errChan)
-
-		if counter >= concurrency || ind == limit {
-			counter = 0
-			if err := waitUntilError(wg, errChan); err != nil {
-				return err
+		go func() {
+			defer sem.Release(1)
+			if err := lambda(ctx, ns); err != nil {
+				logger.Error().Err(err).
+					Str("namespace", ns).
+					Msg("failed to run lambda")
 			}
-		}
+		}()
 	}
-	return nil
-}
 
-func waitUntilError(
-	wg *sync.WaitGroup,
-	errChan chan error,
-) error {
-	// wait for every goroutine to finish so that we don't cancel deletions
-	// that may have succeeded.
-	wg.Wait()
-
-	// don't block on errors if there are none on the channel
-	select {
-	case err := <-errChan:
-		return errors.Wrap(err, "received error in concurrency batch")
-	default:
+	// acquire all semaphores to block
+	if err := sem.Acquire(ctx, int64(concurrency)); err != nil {
+		return fmt.Errorf("failed to acquire all semaphores: %w", err)
 	}
+
 	return nil
 }

@@ -61,14 +61,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.21.5
+    - name: Set up Go 1.23.2
       uses: actions/setup-go@v4
       id: go
       with:
-        go-version: '1.21.5'
+        go-version: '1.23.2'
 
     - name: Lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v6
       with:
         args: --sort-results --config ./.config/.golangci.yaml
 
@@ -82,11 +82,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.21.5
+    - name: Set up Go 1.23.2
       uses: actions/setup-go@v4
       id: go
       with:
-        go-version: 1.21.5
+        go-version: 1.23.2
 
     - name: Set up Docker Buildx
       id: buildx
@@ -142,11 +142,11 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.21.5
+    - name: Set up Go 1.23.2
       id: go
       uses: actions/setup-go@v4
       with:
-        go-version: 1.21.5
+        go-version: 1.23.2
 
     - name: Test
       id: test

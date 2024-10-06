@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -34,12 +32,12 @@ func createMocks(
 	func(zerolog.Logger, kubernetes.Interface, int, int, int, bool, string) (reflect.Reflector, error),
 ) {
 	mockServer := &mocks.MetricsServer{}
-	metricsServer := func(l zerolog.Logger, a string) server.MetricsServer {
+	metricsServer := func(_ zerolog.Logger, a string) server.MetricsServer {
 		metricsArgsAssert(a)
 		return mockServer
 	}
 	reflector := &mocks.Reflector{}
-	newReflector := func(l zerolog.Logger, k kubernetes.Interface, a int, b int, c int, d bool, e string) (reflect.Reflector, error) {
+	newReflector := func(_ zerolog.Logger, _ kubernetes.Interface, a int, b int, c int, d bool, e string) (reflect.Reflector, error) {
 		reflectArgsAssert(a, b, c, d, e)
 		return reflector, nil
 	}
@@ -47,12 +45,13 @@ func createMocks(
 }
 
 func TestStartReflector(t *testing.T) {
+	t.Setenv("POD_NAMESPACE", "kube-system")
 	t.Run("tests that version dumps the version", func(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
 		logger := zerolog.New(buf)
 		t.Parallel()
 		_, _, metricsServer, newReflector := createMocks(
-			func(s string) {}, func(a int, b int, c int, d bool, e string) {})
+			func(_ string) {}, func(_ int, _ int, _ int, _ bool, _ string) {})
 
 		cmdVersion := true
 		version.CommitHash = "thing"
@@ -67,7 +66,7 @@ func TestStartReflector(t *testing.T) {
 			logger,
 			metricsServer,
 			newReflector,
-			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
+			func(_ *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
 			&ReflectorArgs{
 				CmdVersion: &cmdVersion,
 			})
@@ -81,10 +80,9 @@ func TestStartReflector(t *testing.T) {
 		verbose := false
 		namespace := defaultNamespace
 		conn := 0
-		require.Nil(t, os.Setenv("POD_NAMESPACE", "kube-system"))
 
 		_, r, metricsServer, newReflector := createMocks(
-			func(s string) {}, func(a int, b int, c int, d bool, n string) {
+			func(_ string) {}, func(_ int, _ int, _ int, _ bool, n string) {
 				assert.Equal(t, n, namespace)
 			})
 		r.On("Start", mock.Anything).Return(nil)
@@ -93,7 +91,7 @@ func TestStartReflector(t *testing.T) {
 			logger,
 			metricsServer,
 			newReflector,
-			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
+			func(_ *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
 			&ReflectorArgs{
 				Verbose:       &verbose,
 				Namespace:     &namespace,
@@ -115,13 +113,13 @@ func TestStartReflector(t *testing.T) {
 		namespace := defaultNamespace
 
 		_, _, metricsServer, newReflector := createMocks(
-			func(s string) {}, func(a int, b int, c int, d bool, n string) {})
+			func(_ string) {}, func(_ int, _ int, _ int, _ bool, _ string) {})
 
 		startFunc := startReflector(
 			logger,
 			metricsServer,
 			newReflector,
-			func(s *string) (kubernetes.Interface, error) { return nil, errors.New("err") },
+			func(_ *string) (kubernetes.Interface, error) { return nil, errors.New("err") },
 			&ReflectorArgs{
 				Verbose:   &verbose,
 				Namespace: &namespace,
@@ -144,7 +142,7 @@ func TestStartReflector(t *testing.T) {
 		m, r, metricsServer, newReflector := createMocks(
 			func(s string) {
 				assert.Equal(t, s, addr)
-			}, func(a int, b int, c int, d bool, n string) {})
+			}, func(_ int, _ int, _ int, _ bool, _ string) {})
 		m.On("Run", mock.Anything).Return(nil)
 		r.On("Start", mock.Anything).Return(nil)
 
@@ -152,7 +150,7 @@ func TestStartReflector(t *testing.T) {
 			logger,
 			metricsServer,
 			newReflector,
-			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
+			func(_ *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
 			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
@@ -179,7 +177,7 @@ func TestStartReflector(t *testing.T) {
 		m, r, metricsServer, newReflector := createMocks(
 			func(s string) {
 				assert.Equal(t, s, addr)
-			}, func(a int, b int, c int, d bool, n string) {})
+			}, func(_ int, _ int, _ int, _ bool, _ string) {})
 		m.On("Run", mock.Anything).Return(errors.New("some error"))
 		r.On("Start", mock.Anything).Return(nil)
 
@@ -189,7 +187,7 @@ func TestStartReflector(t *testing.T) {
 			tLogger,
 			metricsServer,
 			newReflector,
-			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
+			func(_ *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
 			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
@@ -220,7 +218,7 @@ func TestStartReflector(t *testing.T) {
 		m, r, metricsServer, newReflector := createMocks(
 			func(s string) {
 				assert.Equal(t, s, addr)
-			}, func(a int, b int, c int, d bool, n string) {})
+			}, func(_ int, _ int, _ int, _ bool, _ string) {})
 		m.On("Run", mock.Anything).Return(nil)
 		r.On("Start", mock.Anything).Return(errors.New("some error"))
 
@@ -230,7 +228,7 @@ func TestStartReflector(t *testing.T) {
 			tLogger,
 			metricsServer,
 			newReflector,
-			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
+			func(_ *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
 			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
@@ -261,17 +259,17 @@ func TestStartReflector(t *testing.T) {
 		conn := 0
 
 		m, r, metricsServer, _ := createMocks(
-			func(s string) {}, func(a int, b int, c int, d bool, n string) {})
+			func(_ string) {}, func(_ int, _ int, _ int, _ bool, _ string) {})
 		m.On("Run", mock.Anything).Return(nil)
 		r.On("Start", mock.Anything).Return(errors.New("some error"))
 
 		startFunc := startReflector(
 			logger,
 			metricsServer,
-			func(l zerolog.Logger, k kubernetes.Interface, a int, b int, c int, d bool, e string) (reflect.Reflector, error) {
+			func(_ zerolog.Logger, _ kubernetes.Interface, _ int, _ int, _ int, _ bool, _ string) (reflect.Reflector, error) {
 				return r, errors.New("can't start")
 			},
-			func(s *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
+			func(_ *string) (kubernetes.Interface, error) { return fake.NewSimpleClientset(), nil },
 			&ReflectorArgs{
 				Namespace:     &ns,
 				Metrics:       &metrics,
@@ -301,7 +299,6 @@ func TestReflectorCmd(t *testing.T) {
 
 func TestMain(t *testing.T) {
 	t.Run("runs with no error", func(t *testing.T) {
-		t.Parallel()
 		altCmd := startCmd
 		startCmd = func() *cobra.Command {
 			return &cobra.Command{}
@@ -312,11 +309,10 @@ func TestMain(t *testing.T) {
 		main()
 	})
 	t.Run("runs with error", func(t *testing.T) {
-		t.Parallel()
 		altCmd := startCmd
 		startCmd = func() *cobra.Command {
 			return &cobra.Command{
-				RunE: func(cmd *cobra.Command, args []string) error {
+				RunE: func(_ *cobra.Command, _ []string) error {
 					return errors.New("error")
 				},
 				SilenceUsage:  true,
