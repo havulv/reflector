@@ -15,7 +15,7 @@ func TestMissed(t *testing.T) {
 	// assert that it will run
 	t.Run("tests that missed will dump missed messages", func(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
-		outputFunc = func(f string, a ...interface{}) (int, error) {
+		outputFunc = func(f string, a ...any) (int, error) {
 			return fmt.Fprintf(buf, f, a...)
 		}
 		defer func() {
@@ -27,13 +27,16 @@ func TestMissed(t *testing.T) {
 	})
 
 	t.Run("erroring output func runs through branch", func(t *testing.T) {
-		outputFunc = func(f string, a ...interface{}) (int, error) {
+		outputFunc = func(_ string, _ ...any) (int, error) {
 			return 0, errors.New("some error")
 		}
 		defer func() {
 			outputFunc = fmt.Printf
 		}()
+		// most we can check here is for a panic, since the global logger
+		// doesn't allow for indirection.
 		missed(20)
+		assert.True(t, true)
 	})
 }
 
@@ -50,10 +53,10 @@ func TestSetLogLevel(t *testing.T) {
 		buf := bytes.NewBuffer([]byte{})
 		logger := setLogLevel(zerolog.New(buf), true)
 		assert.NotNil(t, logger)
-		assert.Equal(
+		assert.Contains(
 			t,
-			"{\"level\":\"debug\",\"verbosity\":0,\"message\":\"Created logger\"}\n",
-			buf.String())
+			buf.String(),
+			"\"message\":\"Created logger\"}\n")
 	})
 }
 

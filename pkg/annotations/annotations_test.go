@@ -129,7 +129,7 @@ func TestParseOrFetchNamespaces(t *testing.T) {
 
 			if test.listErr != nil {
 				client.PrependReactor("*", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, test.listErr
 					})
 			}

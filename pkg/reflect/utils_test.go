@@ -1,46 +1,94 @@
 package reflect
 
 import (
-	"errors"
-	"sync"
+	"context"
 	"testing"
+	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestWaitUntilError(t *testing.T) {
+func TestBatchOverNamespaces(t *testing.T) {
 	tests := []struct {
-		d   string
-		err error
+		descrip      string
+		concurrency  int
+		namespaces   []string
+		shouldCancel bool
+		err          string
 	}{
 		{
-			"waits until batch is finished and reports no errors",
-			nil,
+			"batches over a single concurrency",
+			1,
+			[]string{
+				"kube-system",
+				"cert-manager",
+			},
+			false,
+			"",
 		},
 		{
-			"waits until batch is finished and reports errors",
-			errors.New("some error"),
+			"batches over a 10 concurrency",
+			10,
+			[]string{
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+			},
+			false,
+			"",
+		},
+		{
+			"batches with an error",
+			2,
+			[]string{
+				"kube-system",
+				"cert-manager",
+				"kube-system",
+				"cert-manager",
+			},
+			true,
+			"failed to acquire semaphore: context canceled",
 		},
 	}
 
 	for _, l := range tests {
 		test := l
-		t.Run(test.d, func(t *testing.T) {
-			t.Parallel()
-			wg := sync.WaitGroup{}
-			errChan := make(chan error, 1)
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				if test.err != nil {
-					errChan <- test.err
-				}
-			}()
-			if test.err != nil {
-				assert.NotNil(t, waitUntilError(&wg, errChan))
+		t.Run(test.descrip, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if test.shouldCancel {
+				cancel()
+			}
+			err := batchOverNamespaces(
+				ctx,
+				zerolog.New(zerolog.NewTestWriter(t)),
+				test.concurrency,
+				test.namespaces,
+				func(_ context.Context, _ string) error {
+					return nil
+				})
+			if test.err != "" {
+				require.Error(t, err)
+				assert.EqualError(t, err, test.err)
 				return
 			}
-			assert.Nil(t, waitUntilError(&wg, errChan))
+			assert.Nil(t, err)
 		})
 	}
 }

@@ -3,7 +3,6 @@ package reflect
 import (
 	"bytes"
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -23,16 +22,16 @@ import (
 
 func TestReflectToNamespaces(t *testing.T) {
 	tests := []struct {
-		d         string
-		earlyExit bool
+		d      string
+		called bool
 	}{
 		{
 			"tests that no namespaces exits early",
-			true,
+			false,
 		},
 		{
 			"tests that reflection is called",
-			false,
+			true,
 		},
 	}
 
@@ -42,19 +41,22 @@ func TestReflectToNamespaces(t *testing.T) {
 			t.Parallel()
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
-			client := fake.NewSimpleClientset()
+			client := fake.NewClientset()
+			called := false
 			client.PrependReactor("*", "*",
-				func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+				func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					called = true
 					return true, nil, errors.New("some error")
 				})
 
 			namespaces := []string{"a", "b", "c", "d", "e"}
-			if test.earlyExit {
+			if !test.called {
 				namespaces = []string{}
 			}
 
+			// err here is only really caused by context failures
 			err := reflectToNamespaces(
-				ctx, zerolog.New(bytes.NewBuffer([]byte{})),
+				ctx, zerolog.New(zerolog.NewTestWriter(t)),
 				client.CoreV1(),
 				&v1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
@@ -64,11 +66,8 @@ func TestReflectToNamespaces(t *testing.T) {
 					},
 				}, namespaces, 2)
 
-			if test.earlyExit {
-				assert.Nil(t, err)
-				return
-			}
-			assert.NotNil(t, err)
+			assert.Nil(t, err)
+			assert.Equal(t, called, test.called)
 		})
 	}
 }
@@ -78,13 +77,12 @@ func TestReflectLambda(t *testing.T) {
 	defer cancel()
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("*", "*",
-		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+		func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 			return true, nil, errors.New("some error")
 		})
 
 	f := reflectLambda(
-		ctx,
-		zerolog.New(bytes.NewBuffer([]byte{})),
+		zerolog.New(zerolog.NewTestWriter(t)),
 		client.CoreV1(),
 		&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -92,58 +90,11 @@ func TestReflectLambda(t *testing.T) {
 				Namespace:   "thing",
 				Annotations: map[string]string{},
 			},
-		}, "some-hash")
+		})
 	assert.NotNil(t, f)
 
-	wg := &sync.WaitGroup{}
-	errChan := make(chan error, 2)
-	f(wg, "blergh", errChan)
-	wg.Wait()
-
-	select {
-	case err := <-errChan:
-		assert.NotNil(t, err)
-	default:
-		t.Log("no error received after goroutine completion")
-		t.Fail()
-	}
-}
-
-func TestReflectSecret(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	client := fake.NewSimpleClientset()
-	client.PrependReactor("*", "*",
-		func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
-			return true, nil, errors.New("some error")
-		})
-
-	wg := &sync.WaitGroup{}
-	errChan := make(chan error, 2)
-	reflectSecret(
-		ctx,
-		zerolog.New(bytes.NewBuffer([]byte{})),
-		wg,
-		client.CoreV1(),
-		&v1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:        "this",
-				Namespace:   "thing",
-				Annotations: map[string]string{},
-			},
-		},
-		"hash",
-		"blergh",
-		errChan)
-	wg.Wait()
-
-	select {
-	case err := <-errChan:
-		assert.NotNil(t, err)
-	default:
-		t.Log("no error received after goroutine completion")
-		t.Fail()
-	}
+	err := f(ctx, "blergh")
+	assert.NotNil(t, err)
 }
 
 func TestInstrumentedReflect(t *testing.T) {
@@ -234,7 +185,7 @@ func TestReflect(t *testing.T) {
 
 			if test.getErr != nil {
 				client.PrependReactor("*", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, test.getErr
 					})
 			}
@@ -443,7 +394,7 @@ func TestCreateOrUpdateSecret(t *testing.T) {
 			}
 			if test.err != nil {
 				client.PrependReactor("*", "*",
-					func(action clienttesting.Action) (handled bool, ret runtime.Object, err error) {
+					func(_ clienttesting.Action) (handled bool, ret runtime.Object, err error) {
 						return true, nil, test.err
 					})
 			}

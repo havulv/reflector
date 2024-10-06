@@ -9,6 +9,7 @@ package reflect
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -39,8 +40,8 @@ type reflector struct {
 	reflectConcurrency int
 	retries            int
 	cascadeDelete      bool
-	queue              workqueue.RateLimitingInterface
-	indexer            cache.Indexer
+	queue              workqueue.TypedRateLimitingInterface[string]
+	store              cache.Store
 	controller         cache.Controller
 	hasSynced          func() bool
 }
@@ -63,7 +64,7 @@ func NewReflector(
 		workerConcurrency = 1
 	}
 
-	queue, indexer, controller := queue.CreateSecretsWorkQueue(
+	queue, store, controller := queue.CreateSecretsWorkQueue(
 		clientset.CoreV1(), namespace)
 
 	return &reflector{
@@ -72,7 +73,7 @@ func NewReflector(
 		logger:             logger,
 		queue:              queue,
 		retries:            retries,
-		indexer:            indexer,
+		store:              store,
 		controller:         controller,
 		reflectConcurrency: reflectConcurrency,
 		workerConcurrency:  workerConcurrency,
@@ -89,7 +90,7 @@ func (r *reflector) next() bool {
 	defer r.queue.Done(key)
 
 	// Invoke the method containing the business logic
-	err := r.process(key.(string))
+	err := r.process(key)
 
 	r.handleErr(err, key)
 	return true
@@ -103,10 +104,11 @@ func (r *reflector) process(key string) error {
 	defer cancel()
 
 	// In the implementation of the cache, the returned error of GetByKey is always nil
-	obj, exists, _ := r.indexer.GetByKey(key)
+	obj, exists, _ := r.store.GetByKey(key)
 
 	name, namespace := queue.ParseWorkQueueKey(key)
 	ctxLogger := r.logger.With().
+		Bool("exists", exists).
 		Str("rootNamespace", namespace).
 		Str("secret", name).Logger()
 
@@ -118,7 +120,7 @@ func (r *reflector) process(key string) error {
 		}
 		namespaces, err := findExistingSecretNamespaces(ctx, r.core, name)
 		if err != nil {
-			return errors.Wrap(err, "unable to find namespaces secret existed in")
+			return fmt.Errorf("unable to find namespaces secret existed in: %w", err)
 		}
 
 		return cascadeDelete(
@@ -143,7 +145,7 @@ func (r *reflector) process(key string) error {
 	namespaces, err := annotations.ParseOrFetchNamespaces(
 		ctx, r.core, sec.Annotations)
 	if err != nil {
-		return errors.Wrap(err, "unable to parse namespaces")
+		return fmt.Errorf("unable to parse namespaces: %w", err)
 	}
 
 	return reflectToNamespaces(
@@ -156,7 +158,7 @@ func (r *reflector) process(key string) error {
 }
 
 // handleErr checks if an error happened and makes sure we will retry later.
-func (r *reflector) handleErr(err error, key interface{}) {
+func (r *reflector) handleErr(err error, key string) {
 	if err == nil {
 		// Forget about the #AddRateLimited history of the key on every successful synchronization.
 		// This ensures that future processing of updates for this key is not delayed because of
@@ -169,7 +171,7 @@ func (r *reflector) handleErr(err error, key interface{}) {
 	requeues := r.queue.NumRequeues(key)
 	if requeues < r.retries {
 		r.logger.Error().
-			Str("secret", key.(string)).
+			Str("secret", key).
 			Err(err).
 			Msg("reflection failed; requeueing")
 
@@ -183,7 +185,7 @@ func (r *reflector) handleErr(err error, key interface{}) {
 	// Report to an external entity that, even after several retries, we could not successfully process this key
 	runtime.HandleError(err)
 	r.logger.Error().
-		Str("secret", key.(string)).
+		Str("secret", key).
 		Int("requeues", requeues).
 		Err(err).
 		Msg("Dropping secret out of the queue")

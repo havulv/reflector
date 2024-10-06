@@ -4,10 +4,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
-	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
 	v1 "k8s.io/api/core/v1"
@@ -55,55 +53,33 @@ func reflectToNamespaces(
 
 	// hash the og -- TODO is crc64 good enough here?
 	return batchOverNamespaces(
+		ctx,
+		logger,
 		concurrency,
 		namespaces,
-		reflectLambda(
-			ctx, logger, client, sec,
-			fmt.Sprintf("%x", sha256.Sum256([]byte(sec.String())))))
+		reflectLambda(logger, client, sec))
 }
 
 func reflectLambda(
-	ctx context.Context,
 	logger zerolog.Logger,
 	client corev1.SecretsGetter,
 	sec *v1.Secret,
-	hash string,
-) func(wg *sync.WaitGroup, ns string, errChan chan error) {
-	return func(wg *sync.WaitGroup, ns string, errChan chan error) {
-		reflectSecret(
-			ctx, logger.With().Str("reflectionNamespace", ns).Logger(),
-			wg, client, sec, hash, ns, errChan)
-	}
-}
-
-func reflectSecret(
-	ctx context.Context,
-	logger zerolog.Logger,
-	wg *sync.WaitGroup,
-	client corev1.SecretsGetter,
-	sec *v1.Secret,
-	hash string,
-	ns string,
-	errChan chan error,
-) {
-	// spin off a goroutine for every level of concurrency
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+) func(context.Context, string) error {
+	return func(ctx context.Context, ns string) error {
+		// spin off a goroutine for every level of concurrency
 		if err := instrumentedReflect(
 			ctx,
 			logger,
 			client.Secrets(ns),
 			sec,
-			hash,
+			fmt.Sprintf("%x", sha256.Sum256([]byte(sec.String()))),
 			ns,
 		); err != nil {
-			logger.Error().Err(err).Msg("unable to reflect")
-			errChan <- errors.Wrap(
-				err,
-				"error while reflecting secret to namespace")
+			return fmt.Errorf(
+				"error while reflecting secret to namespace: %w", err)
 		}
-	}()
+		return nil
+	}
 }
 
 func instrumentedReflect(
@@ -137,7 +113,7 @@ func reflect(
 	exists := !apierrors.IsNotFound(err)
 	if err != nil && exists {
 		logger.Error().Err(err).Msg("error while fetching secret from reflection namespace")
-		return errors.Wrap(err, "error while getting reflected secret")
+		return fmt.Errorf("error while getting reflected secret: %w", err)
 	}
 
 	// if it does exist, check the hash to see if we need to update
@@ -218,14 +194,14 @@ func createOrUpdateSecret(
 		labels[0] = "update"
 		_, err = client.Update(ctx, sec, metav1.UpdateOptions{})
 		if err != nil {
-			return errors.Wrap(err, "error while updating secret")
+			return fmt.Errorf("error while updating secret: %w", err)
 		}
 		return nil
 	}
 
 	_, err = client.Create(ctx, sec, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrap(err, "error while creating secret")
+		return fmt.Errorf("error while creating secret: %w", err)
 	}
 	return nil
 }

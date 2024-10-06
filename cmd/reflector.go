@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
 
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
+
+	_ "go.uber.org/automaxprocs"
 
 	"github.com/havulv/reflector/cmd/k8s"
 	"github.com/havulv/reflector/cmd/version"
@@ -21,8 +24,11 @@ import (
 
 const (
 	defaultRetries            = 5
-	defaultWorkerConcurrency  = 10
 	defaultReflectConcurrency = 1
+)
+
+var (
+	defaultWorkerConcurrency = runtime.GOMAXPROCS(0)
 )
 
 // ReflectorArgs is a struct of the arguments to the reflector
@@ -56,7 +62,7 @@ func startReflector(
 	clientClosure func(*string) (kubernetes.Interface, error),
 	rArgs *ReflectorArgs,
 ) func(*cobra.Command, []string) error {
-	return func(cmd *cobra.Command, args []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
 		ctx := cmd.Context()
 		if rArgs.CmdVersion != nil && *rArgs.CmdVersion {
 			return version.DumpVersion()
@@ -69,7 +75,7 @@ func startReflector(
 
 		client, err := clientClosure(rArgs.KubeConfig)
 		if err != nil {
-			return errors.Wrap(err, "unable to create k8s client")
+			return fmt.Errorf("unable to create k8s client: %w", err)
 		}
 
 		// Ensure that, if either component goes through
@@ -110,7 +116,7 @@ func startReflector(
 			*rArgs.CascadeDelete,
 			*rArgs.Namespace)
 		if err != nil {
-			return errors.Wrap(err, "unable to start reflector")
+			return fmt.Errorf("unable to start reflector: %w", err)
 		}
 
 		wg.Add(1)

@@ -8,6 +8,7 @@ package annotations
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -65,7 +66,7 @@ func ParseOrFetchNamespaces(
 	} else if len(namespaces) == 0 {
 		found, err := client.Namespaces().List(ctx, metav1.ListOptions{})
 		if err != nil {
-			return []string{}, errors.Wrap(err, "unable to list namespaces")
+			return []string{}, fmt.Errorf("unable to list namespaces: %w", err)
 		}
 		for _, namespace := range found.Items {
 			namespaces = append(namespaces, namespace.Name)
